@@ -16,11 +16,12 @@ class Chord:
 
 
 class Performance:
-    def __init__(self, path, name, player_name, is_original=0):
+    def __init__(self, path, name, player_name, original_path, is_original=0):
         self.midi_data = pretty_midi.PrettyMIDI(path)
         self.name = name
         self.is_original = is_original
         self.player_name = player_name
+
         midi_list = []
         for instrument in self.midi_data.instruments:
             for note in instrument.notes:
@@ -31,7 +32,20 @@ class Performance:
                 midi_list.append([start, end, pitch, velocity, instrument.name])
 
         midi_list = sorted(midi_list, key=lambda x: (x[0], x[2]))
-        self.midi_df = pd.DataFrame(midi_list, columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
+        self.midi_df = pd.DataFrame(midi_list, columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
+
+        midi_data_orig = pretty_midi.PrettyMIDI(original_path)
+        midi_list_orig = []
+        for instrument in midi_data_orig.instruments:
+            for note in instrument.notes:
+                start = note.start
+                end = note.end
+                pitch = note.pitch
+                velocity = note.velocity
+                midi_list_orig.append([start, end, pitch, velocity, instrument.name])
+
+        midi_list_orig = sorted(midi_list_orig, key=lambda x: (x[0], x[2]))
+        self.original = pd.DataFrame(midi_list_orig, columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
         """if is_original:
             originals_dict.append
             """
@@ -108,42 +122,78 @@ class Performance:
 
         return correct_orig, correct_stud, missing, unnecessary
 
-    def pitch_grader(self, original, timing_mistake=0.1):
+    def grader(self):
         """
             :param timing_mistake:
             :param original: the original performance, a "Performance_class" object
             :return: pitch grade between 0-100, a list of the weights of original's each note, a list of the weights of stud's each note
             """
+        orig = self.original
+        stud_current = self.midi_df
+        pitch_score = 0
+        timing_score = 0
+        velocity_score = 0
 
-        correct_notes = 0
-        close_notes = 0
-        correct_orig, correct_stud, missing, unnecessary = self.find_missing_unnecessary_notes(original)
-        i = 0
-        while i < correct_orig.shape[0]:
-            j = 0
-            start = correct_orig[i][0]
-            end = correct_orig[i][1]
-            pitch = correct_orig[i][2]
-            close = False
-            while j < correct_stud.shape[0] and end + timing_mistake > correct_stud[j][0]:
-                if abs(start - correct_stud[j][0]) < timing_mistake and abs(end - correct_stud[j][1]) < timing_mistake:
-                    if pitch == correct_stud[j][2]:
-                        correct_notes += 1
-                        unnecessary[int(correct_stud[j][5])] = 1
-                        if close:
-                            close_notes -= 1
-                        break
-                    if abs(pitch - correct_stud[j][2]) == 1:
-                        if not close:
-                            close_notes += 1
-                            close = True
-                if close:
-                    unnecessary[int(correct_stud[j][5])] = 0.75
-                j += 1
-            i += 1
+        for i in range(orig.shape[0]):
+            current_note_orig = orig[i]
+            start = current_note_orig[0] - 1
+            if i != orig.shape[0] - 1:
+                end = max(current_note_orig[1], orig[i+1][0])
+            else:
+                end = current_note_orig[1]
+            pitch_orig = current_note_orig[2]
+            j_start, j_end = self.find_j_start_and_end(start, end, stud_current)
 
-        return 100 * (correct_notes / correct_orig.shape[0]) + 50 * (
-                    close_notes / correct_orig.shape[0]), missing, unnecessary
+            if j_start is not None and j_end is not None:
+                while j_start <= j_end:
+                    current_note_stud = stud_current[j_start]
+                    if np.any(current_note_stud): #if current_note_stud is not all zeros (if we didn't count this note yet)
+                        if current_note_stud[2] == pitch_orig:
+                            stud_current[j_start] = np.zeros(stud_current.shape[1]) # if there is a match, "delete" the note by making the row all zeros
+                            timing_score += self.timing_velocity_grader(i, j_start, True) # i = index of orig, j_start = index of stud
+                            velocity_score += self.timing_velocity_grader(i, j_start, False) # i = index of orig, j_start = index of stud
+                            pitch_score += 1
+                            break
+                    j_start += 1
+
+        pitch_grade = pitch_score / orig.shape[0] # note missing issue - if a note sohuld have been played and the user missed it and didn't play any other note.
+        too_many_notes_grade = self.calculate_too_many_notes_grade(stud_current) #too many notes issue - if a note should have been played and the user played other notes.
+        timing_grade = self.score_to_grade(timing_score)
+        velocity_grade = self.score_to_grade(velocity_score)
+
+        return pitch_grade, too_many_notes_grade, timing_grade, velocity_grade
+
+
+    def find_j_start_and_end(self, start, end, stud_current):
+        j = 0
+        while j < stud_current.shape[0]:
+            if np.any(stud_current[j]): # if current_note_stud is not all zeros (if we didn't count this note yet)
+                if stud_current[j][0] >= start:
+                    j_start = j
+                    while j < stud_current.shape[0]:
+                        if np.any(stud_current[j]):
+                            if stud_current[j][0] >= end:
+                                return j_start, j
+                        j += 1
+                    return j_start, j-1
+            j += 1
+        return None, None
+
+    def calculate_too_many_notes_grade(self, stud_new):
+        too_many_notes_score = 0
+
+        for i in range(stud_new.shape[0]):
+            i_all_zero = not np.any(stud_new[i])
+            if not i_all_zero:
+                too_many_notes_score += 1
+
+        return too_many_notes_score / stud_new.shape[0]
+
+    def score_to_grade(self, score):
+        return 0
+
+    def timing_velocity_grader(self, i, j, timing): #timing = True for timing, timing = False for velocity. i = index of orig, j = index of stud
+        return 0
 
     def dynamics_grader(original, student):
         """
