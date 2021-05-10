@@ -160,7 +160,8 @@ class Performance:
         too_many_notes_grade = self.calculate_too_many_notes_grade(stud_current) #too many notes issue - if a note should have been played and the user played other notes.
         timing_grade = self.score_to_grade(timing_score)
         velocity_grade = self.score_to_grade(velocity_score)
-
+        timing_grade = 1 - timing_score / orig.shape[0]
+        velocity_grade = 1 - velocity_score / orig.shape[0]
         return pitch_grade, too_many_notes_grade, timing_grade, velocity_grade
 
 
@@ -192,8 +193,33 @@ class Performance:
     def score_to_grade(self, score):
         return 0
 
-    def timing_velocity_grader(self, i, j, timing): #timing = True for timing, timing = False for velocity. i = index of orig, j = index of stud
-        return 0
+    def timing_velocity_grader(self, i, j,
+                               timing):  # timing = True for timing, timing = False for velocity. i = index of orig, j = index of stud
+        orig = self.original
+        stud_current = self.midi_df
+        stud_note = stud_current[j]
+        orig_note = orig[i]
+        if timing:
+            orig_duration = orig_note[1] - orig_note[0]
+            stud_duration = stud_note[1] - stud_note[0]
+            distance = np.abs(stud_note[0] - orig_note[0])
+            diff_duration = np.abs(orig_duration - stud_duration)
+            timing_grade = self.deviation_of_note(distance, sigma=2)
+            duration_grade = self.deviation_of_note(diff_duration, sigma=2)
+            return (2 / 3) * timing_grade + (1 / 3) * duration_grade
+        else:
+            orig_velocity = orig_note[3]
+            stud_velocity = stud_note[3]
+            diff_velocity = np.abs(orig_velocity - stud_velocity)
+            velocity_grade = self.deviation_of_note(diff_velocity, sigma=70)
+            return velocity_grade
+
+    def deviation_of_note(self, distance, sigma=2):
+        if sigma == 2:
+            gausian = lambda x: np.exp(-0.5 * (x / sigma) ** 2)
+        else:
+            gausian = lambda x: np.exp(-0.5 * (np.max([(x - 8), 1]) / 70) ** 2)
+        return 1 - np.round(gausian(distance), 3)
 
     def dynamics_grader(original, student):
         """
