@@ -84,13 +84,14 @@ class Performance:
         """
         orig = self.original
         stud = self.midi_df
-        timing_score = 0
-        velocity_score = 0
+        tempo_score = 0
+        a_d_score = 0
         matching_notes = 0
         orig_pitch_list = orig[:, 2]
         stud_pitch_list = stud[:, 2]
         # loop for checking blocks replayed
         for i in range(3):
+            # returns list of triples describing matching subsequences
             matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
             blocks = matcher.get_matching_blocks()
             if len(blocks) == 1:
@@ -99,30 +100,43 @@ class Performance:
             if i == 0:
                 played_notes = scores[2]
                 blocks_count = len(blocks)
-            timing_score += scores[0] * (1 - i * 0.25)
-            velocity_score += scores[1] * (1 - i * 0.25)
+            tempo_score += scores[0] * (1 - i * 0.25)
+            a_d_score += scores[1] * (1 - i * 0.25)
             matching_notes += scores[2]
             # if it is not the same song or the performance is messy don't iterate further
             if played_notes / orig.shape[0] < 0.5:
                 break
         # pitch grade is effected by number of initial blocks, missing and unnecessary notes
         pitch_grade = played_notes / (orig.shape[0] * 2) + matching_notes / (stud.shape[0] * 2) - (
-                blocks_count - 2) * 2 / orig.shape[0]
+                blocks_count - 2) / orig.shape[0]
+        pitch_grade = max(0, pitch_grade)
         # to avoid "overfitting" of the blocks, the grade is normalized with respect to pitch grade
-        timing_grade = (1 - timing_score / matching_notes) * np.sqrt(pitch_grade)
-        velocity_grade = (1 - velocity_score / matching_notes) * np.sqrt(pitch_grade)
-        return {"pitch grade": pitch_grade, "timing grade": timing_grade, "velocity grade": velocity_grade}
+        tempo_grade = (1 - tempo_score / matching_notes) * np.sqrt(pitch_grade)
+        a_d_grade = (1 - a_d_score / matching_notes) * np.sqrt(pitch_grade)
+        return {"pitch grade": pitch_grade, "tempo grade": tempo_grade, "articulation and dynamics grade": a_d_grade}
 
     def blocks_grader(self, blocks, sigma):
+        """
+
+        :param blocks: a list of triples describing student's matching sub-sequences played
+        :param sigma: sigma for scoring functions
+        :return: tempo grade, a_d_grade - articulation and dynamics grade, number of notes from the blocks that the student played.
+        """
         orig = self.original
         stud = self.midi_df
-        timing_score = 0
-        velocity_score = 0
+        tempo_score = 0
+        a_d_score = 0
         matching_notes = 0
         for block in blocks:
+            # end of blocks list
             if block[2] == 0:
                 break
+            # ignore single notes
+            if block[2] == 1:
+                continue
             matching_notes += block[2]
+
+            # match timing of the two matching parts
             orig_start = block[0]
             stud_start = block[1]
             orig_set_time = orig[orig_start, 0]
@@ -131,15 +145,23 @@ class Performance:
                 # testing the block's grades of timing and velocity
                 cur_orig_note = orig[orig_start + i]
                 cur_stud_note = stud[stud_start + i]
+                # calculate relative timing for each note in block
                 cur_orig_note[0] = cur_orig_note[0] - orig_set_time
                 cur_orig_note[1] = cur_orig_note[1] - orig_set_time
                 cur_stud_note[0] = cur_stud_note[0] - stud_set_time
                 cur_stud_note[1] = cur_stud_note[1] - stud_set_time
+                # ignore note in further analysis
                 cur_stud_note[2] = 0
-                timing_score += self.timing_velocity_grader(cur_orig_note, cur_stud_note, True, sigma=sigma)
-                velocity_score += self.timing_velocity_grader(cur_orig_note, cur_stud_note, False, sigma=sigma)
+                # calculate grades for difference in notes
+                tempo_note_score, a_d_note_score = self.timing_velocity_grader(cur_orig_note, cur_stud_note,
+                                                                               sigma=sigma)
+                tempo_score += tempo_note_score
+                a_d_score += a_d_note_score
+                # reset timing in original performance
+                cur_orig_note[0] = cur_orig_note[0] + orig_set_time
+                cur_orig_note[1] = cur_orig_note[1] + orig_set_time
 
-        return timing_score, velocity_score, matching_notes
+        return tempo_score, a_d_score, matching_notes
 
     def guitar_hero_grader(self, timing_window=1):
         """
@@ -219,22 +241,26 @@ class Performance:
 
         return 1 - too_many_notes_score / stud_new.shape[0]
 
-    def timing_velocity_grader(self, orig_note, stud_note, timing, sigma=5):
+    def timing_velocity_grader(self, orig_note, stud_note, sigma=10):
+        """
 
-        if timing:
-            orig_duration = orig_note[1] - orig_note[0]
-            stud_duration = stud_note[1] - stud_note[0]
-            distance = np.abs(stud_note[0] - orig_note[0])
-            diff_duration = np.abs(orig_duration - stud_duration)
-            timing_grade = self.deviation_of_note(distance, sigma=sigma//2)
-            duration_grade = self.deviation_of_note(diff_duration, sigma=sigma//5)
-            return (2 / 3) * timing_grade + (1 / 3) * duration_grade
-        else:
-            orig_velocity = orig_note[3]
-            stud_velocity = stud_note[3]
-            diff_velocity = np.abs(orig_velocity - stud_velocity)
-            velocity_grade = self.deviation_of_note(diff_velocity, sigma=sigma, grade="velocity")
-            return velocity_grade
+        :param orig_note:
+        :param stud_note:
+        :param sigma:
+        :return: grades for differences between notes with the same pitch
+        """
+
+        orig_duration = orig_note[1] - orig_note[0]
+        stud_duration = stud_note[1] - stud_note[0]
+        distance = np.abs(stud_note[0] - orig_note[0])
+        diff_duration = np.abs(orig_duration - stud_duration)
+        timing_grade = self.deviation_of_note(distance, sigma=sigma // 2)
+        duration_grade = self.deviation_of_note(diff_duration, sigma=sigma // 5)
+        orig_velocity = orig_note[3]
+        stud_velocity = stud_note[3]
+        diff_velocity = np.abs(orig_velocity - stud_velocity)
+        velocity_grade = self.deviation_of_note(diff_velocity, sigma=sigma, grade="velocity")
+        return timing_grade, (2 / 3) * velocity_grade + (1 / 3) * duration_grade
 
     def deviation_of_note(self, distance, sigma=5, grade="timing"):
         if grade == "timing":
