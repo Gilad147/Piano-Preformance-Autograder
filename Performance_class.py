@@ -77,14 +77,15 @@ class Performance:
             i += chord_index
         return chords
 
-    def mistakes_generator(self, feature, noise=0.5, percentage=0.25):
-        new_midi_df = self.original.__deepcopy__()
+    def mistakes_generator(self, feature, noise=0.75, percentage=1):
+        new_midi_df = np.copy(self.original)
         if feature == "rhythm":
             accumulation_mistake = 0
             for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage and i > 0:
                     accumulation_mistake += noise * (note[0] - new_midi_df[i - 1][0])
                 note[0] += accumulation_mistake
+                note[1] += accumulation_mistake
         if feature == "duration":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
@@ -92,8 +93,13 @@ class Performance:
         if feature == "velocity":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
-                    note[4] *= noise
+                    note[3] *= 1+noise
         return new_midi_df
+
+    def mistake_gen_check(self, feature, noise=0.75, percentage=1):
+        new_midi_df = self.mistakes_generator(feature, noise, percentage)
+        self.midi_df = new_midi_df
+        return self.get_features()
 
     def baseline_grader(self, sigma=20):
         """
