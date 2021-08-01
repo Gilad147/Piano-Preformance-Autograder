@@ -5,7 +5,7 @@
 
 import Performance_class
 
-test = Performance_class.Performance('musicsamples/midi_test_2021_05_14_18_30_58_Jason_BnuGesher.mid',
-                                     'HaAviv', 'Jason', 'musicsamples/85c_BnuGesher.midi')
+test = Performance_class.Performance('musicsamples/midi_test_2021_05_14_18_44_33_Peleg_HaKovaSheli.mid',
+                                     'HaAviv', 'Jason', 'musicsamples/74a_HaKovaSheli.midi')
 # HaAviv.visualise()
-print(test.baseline_grader(sigma=5))
+print(test.get_features())

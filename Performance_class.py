@@ -4,6 +4,7 @@ import libfmp.c1
 import numpy as np
 from matplotlib import pyplot as plt
 from difflib import SequenceMatcher
+import sklearn as skl
 
 
 class Chord:
@@ -163,83 +164,71 @@ class Performance:
 
         return tempo_score, a_d_score, matching_notes
 
-    def guitar_hero_grader(self, timing_window=1):
-        """
-            :param timing_window:
-            :return: grades between 0-100
-            """
+    def get_features(self):
         orig = self.original
-        stud_current = self.midi_df
-        pitch_score = 0
-        timing_score = 0
-        velocity_score = 0
-        played_notes = 0
-        for i in range(orig.shape[0]):
-            current_note_orig = orig[i]
-            start = current_note_orig[0] - timing_window
-            if i != orig.shape[0] - 1:
-                end = max(current_note_orig[1], orig[i + 1][0])
-            else:
-                end = current_note_orig[1]
-            pitch_orig = current_note_orig[2]
-            j_start, j_end = self.find_j_start_and_end(start, end, stud_current, timing_window)
+        stud = self.midi_df
+        orig_pitch_list = orig[:, 2]
+        stud_pitch_list = stud[:, 2]
+        matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
+        blocks = matcher.get_matching_blocks()
+        rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
+        rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
+        velocity_feature = 1 - sum(velocity_diff) / matching_notes
+        duration_feature = 1 - sum(duration_diff) / matching_notes
+        pitch_feature = matching_notes/len(orig_pitch_list)
+        return rhythm_feature, velocity_feature,duration_feature, pitch_feature
 
-            note_played = False
-            if j_start is not None and j_end is not None:
-                while j_start <= j_end:
-                    current_note_stud = stud_current[j_start]
-                    if np.any(current_note_stud):
-                        # if current_note_stud is not all zeros (if we didn't count this note yet)
-                        if current_note_stud[2] == pitch_orig:
-                            timing_score += self.timing_velocity_grader(current_note_orig, current_note_stud, True,
-                                                                        sigma=10)
-                            # i = index of orig, j_start = index of stud
-                            velocity_score += self.timing_velocity_grader(current_note_orig, current_note_stud, False,
-                                                                          sigma=5)
-                            # i = index of orig, j_start = index of stud
-                            pitch_score += 1
-                            note_played = True
-                            stud_current[j_start] = np.zeros(stud_current.shape[1])
-                            # if there is a match, "delete" the note by making the row all zeros
-                            break
-                        if abs(current_note_stud[2] - pitch_orig) < 3:
-                            note_played = True
-                    j_start += 1
-            if note_played:
-                played_notes += 1
-        too_many_notes_grade = min(
-            self.calculate_too_many_notes_grade(stud_current) + (played_notes - pitch_score) / stud_current.shape[0], 1)
-        # too many notes issue - if a note should have been played and the user played other notes.
-        pitch_grade = pitch_score / played_notes
-        # note missing issue - if a note should have been played and the user missed it and didn't play any other note.
-        timing_grade = 1 - timing_score / orig.shape[0]
-        velocity_grade = 1 - velocity_score / played_notes
-        return pitch_grade, too_many_notes_grade, timing_grade, velocity_grade
 
-    def find_j_start_and_end(self, start, end, stud_current, timing_window):
-        j = 0
-        while j < stud_current.shape[0]:
-            if np.any(stud_current[j]):  # if current_note_stud is not all zeros (if we didn't count this note yet)
-                if start <= stud_current[j][0] <= start + timing_window * 6:
-                    j_start = j
-                    while j < stud_current.shape[0]:
-                        if np.any(stud_current[j]):
-                            if stud_current[j][0] >= end:
-                                return j_start, j
-                        j += 1
-                    return j_start, j - 1
-            j += 1
-        return None, None
+    def supervised_blocks_diff(self, blocks):
+        """
 
-    def calculate_too_many_notes_grade(self, stud_new):
-        too_many_notes_score = 0
+        :param blocks:
+        :return:
+        """
 
-        for i in range(stud_new.shape[0]):
-            i_all_zero = not np.any(stud_new[i])
-            if not i_all_zero:
-                too_many_notes_score += 1
+        # technical features: tempo, velocity, note duration
 
-        return 1 - too_many_notes_score / stud_new.shape[0]
+        orig = self.original
+        stud = self.midi_df
+        rhythm_diff = []
+        velocity_diff = []
+        duration_diff = []
+        matching_notes = 0
+        for block in blocks:
+            # end of blocks list
+            if block[2] == 0:
+                break
+            # ignore single notes
+            if block[2] == 1:
+                continue
+            matching_notes += block[2]
+
+            # match timing of the two matching parts
+            orig_start = block[0]
+            stud_start = block[1]
+            orig_set_time = orig[orig_start, 0]
+            stud_set_time = stud[stud_start, 0]
+            for i in range(block[2]):
+                # testing the block's grades of timing and velocity
+                cur_orig_note = orig[orig_start + i]
+                cur_stud_note = stud[stud_start + i]
+                # calculate relative timing for each note in block
+                cur_orig_note[0] = cur_orig_note[0] - orig_set_time
+                cur_orig_note[1] = cur_orig_note[1] - orig_set_time
+                cur_stud_note[0] = cur_stud_note[0] - stud_set_time
+                cur_stud_note[1] = cur_stud_note[1] - stud_set_time
+                # ignore note in further analysis
+                cur_stud_note[2] = 0
+                # calculate grades for difference in notes
+                rhythm_diff.append(np.abs(cur_orig_note[0] - cur_stud_note[0]) / (cur_orig_note[0] + 0.0001))
+                velocity_diff.append(np.abs(cur_orig_note[3] - cur_stud_note[3]) / cur_orig_note[3])
+                orig_duration = cur_orig_note[1] - cur_orig_note[0]
+                stud_duration = cur_stud_note[1] - cur_stud_note[0]
+                duration_diff.append(np.abs(orig_duration - stud_duration) / orig_duration)
+                # reset timing in original performance
+                cur_orig_note[0] = cur_orig_note[0] + orig_set_time
+                cur_orig_note[1] = cur_orig_note[1] + orig_set_time
+        return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
     def timing_velocity_grader(self, orig_note, stud_note, sigma=10):
         """
