@@ -83,7 +83,7 @@ class Performance:
             accumulation_mistake = 0
             for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage and i > 0:
-                    accumulation_mistake += noise * (note[0] - new_midi_df[i - 1][0])
+                    accumulation_mistake += noise * (note[0] - self.original[i - 1][0])
                 note[0] += accumulation_mistake
                 note[1] += accumulation_mistake
         if feature == "duration":
@@ -248,7 +248,7 @@ class Performance:
                 else:
                     orig_rhythm = orig_set_time
                     stud_rhythm = stud_set_time
-                rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm + 0.0001))
+                rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm + 0.00001))
                 velocity_diff.append(np.abs(cur_orig_note[3] - cur_stud_note[3]) / cur_orig_note[3])
                 orig_duration = cur_orig_note[1] - cur_orig_note[0]
                 stud_duration = cur_stud_note[1] - cur_stud_note[0]
