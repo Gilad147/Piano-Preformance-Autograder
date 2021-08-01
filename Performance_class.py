@@ -77,6 +77,24 @@ class Performance:
             i += chord_index
         return chords
 
+    def mistakes_generator(self, feature, noise=0.5, percentage=0.25):
+        new_midi_df = self.original.__deepcopy__()
+        if feature == "rhythm":
+            accumulation_mistake = 0
+            for i, note in enumerate(new_midi_df):
+                if np.random.rand() < percentage and i > 0:
+                    accumulation_mistake += noise * (note[0] - new_midi_df[i - 1][0])
+                note[0] += accumulation_mistake
+        if feature == "duration":
+            for note in new_midi_df:
+                if np.random.rand() < percentage:
+                    note[1] += (note[1] - note[0]) * noise
+        if feature == "velocity":
+            for note in new_midi_df:
+                if np.random.rand() < percentage:
+                    note[4] *= noise
+        return new_midi_df
+
     def baseline_grader(self, sigma=20):
         """
 
@@ -111,7 +129,7 @@ class Performance:
         pitch_grade = played_notes / (orig.shape[0] * 2) + matching_notes / (stud.shape[0] * 2) - (
                 blocks_count - 2) / orig.shape[0]
         pitch_grade = max(0, pitch_grade)
-        # to avoid "overfitting" of the blocks, the grade is normalized with respect to pitch grade
+        # to avoid "over fitting" of the blocks, the grade is normalized with respect to pitch grade
         tempo_grade = (1 - tempo_score / matching_notes) * np.sqrt(pitch_grade)
         a_d_grade = (1 - a_d_score / matching_notes) * np.sqrt(pitch_grade)
         return {"pitch grade": pitch_grade, "tempo grade": tempo_grade, "articulation and dynamics grade": a_d_grade}
@@ -175,9 +193,8 @@ class Performance:
         rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
         velocity_feature = 1 - sum(velocity_diff) / matching_notes
         duration_feature = 1 - sum(duration_diff) / matching_notes
-        pitch_feature = matching_notes/len(orig_pitch_list)
-        return rhythm_feature, velocity_feature,duration_feature, pitch_feature
-
+        pitch_feature = matching_notes / len(orig_pitch_list)
+        return rhythm_feature, velocity_feature, duration_feature, pitch_feature
 
     def supervised_blocks_diff(self, blocks):
         """
@@ -208,19 +225,24 @@ class Performance:
             stud_start = block[1]
             orig_set_time = orig[orig_start, 0]
             stud_set_time = stud[stud_start, 0]
-            for i in range(block[2]):
+            for i in range(orig_start, orig_start + block[2]):
                 # testing the block's grades of timing and velocity
-                cur_orig_note = orig[orig_start + i]
-                cur_stud_note = stud[stud_start + i]
-                # calculate relative timing for each note in block
-                cur_orig_note[0] = cur_orig_note[0] - orig_set_time
-                cur_orig_note[1] = cur_orig_note[1] - orig_set_time
-                cur_stud_note[0] = cur_stud_note[0] - stud_set_time
-                cur_stud_note[1] = cur_stud_note[1] - stud_set_time
+                cur_orig_note = orig[i]
+                cur_stud_note = stud[i]
+
                 # ignore note in further analysis
                 cur_stud_note[2] = 0
                 # calculate grades for difference in notes
-                rhythm_diff.append(np.abs(cur_orig_note[0] - cur_stud_note[0]) / (cur_orig_note[0] + 0.0001))
+                if i > 0:
+                    prev_orig = orig[i - 1]
+                    prev_stud = stud[i - 1]
+
+                    orig_rhythm = cur_orig_note[0] - prev_orig[0]
+                    stud_rhythm = cur_stud_note[0] - prev_stud[0]
+                else:
+                    orig_rhythm = orig_set_time
+                    stud_rhythm = stud_set_time
+                rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm + 0.0001))
                 velocity_diff.append(np.abs(cur_orig_note[3] - cur_stud_note[3]) / cur_orig_note[3])
                 orig_duration = cur_orig_note[1] - cur_orig_note[0]
                 stud_duration = cur_stud_note[1] - cur_stud_note[0]
