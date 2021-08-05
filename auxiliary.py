@@ -1,6 +1,7 @@
 import Performance_class
 import numpy as np
 from midiutil.MidiFile import MIDIFile
+import pretty_midi
 
 
 def create_random_mistakes(path, name, n, max_noise, max_percentage, min_noise=0, min_percentage=0.5):
@@ -29,23 +30,13 @@ def np2mid(np_performance, midfilename):
     @return: None
     """
 
-    track = 0
-    channel = 0
-    time = 0
-    tempo = 60  # In BPM -  use 60 so that time is just in seconds
+    performance = pretty_midi.PrettyMIDI()
 
-    mymidi = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
-    # automatically)
-    mymidi.addTempo(track, time, tempo)
-
+    piano = pretty_midi.Instrument(program=4)
+    # Iterate over note names, which will be converted to note number later
     for m in np_performance:
-        note = m[2]
-        starttime = m[0]
-        endtime = m[1]
-        volume = int(m[3])
-        duration = endtime - starttime
-        mymidi.addNote(track, channel, note, starttime, duration, volume)
+        note = pretty_midi.Note(velocity=int(m[3]), pitch=m[2], start=m[0], end=m[1])
+        piano.notes.append(note)
+    performance.instruments.append(piano)
+    performance.write(midfilename)
 
-    with open(midfilename, "wb") as output_file:
-        mymidi.writeFile(output_file)
-    output_file.close()

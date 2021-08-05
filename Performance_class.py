@@ -96,16 +96,19 @@ class Performance:
                 note[0] += accumulation_mistake
                 note[1] += accumulation_mistake
         if feature == "duration":
-            for note in new_midi_df:
+            for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage:
-                    note[1] += (note[1] - note[0]) * noise
+                    if i + 1 == new_midi_df.shape[0] or note[1] + (note[1] - note[0]) * noise < reference[i + 1][0]:
+                        note[1] += (note[1] - note[0]) * noise
+                    else:
+                        note[1] = reference[i + 1][0] - 0.005
         if feature == "velocity":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
-                    note[3] *= 1 + noise
+                    note[3] *= 1 + noise/2
         if feature == "pitch":
             for note in new_midi_df:
-                if np.random.rand() < percentage/2:
+                if np.random.rand() < percentage / 2:
                     note[2] = 1 + note[2]
         self.midi_df = new_midi_df
 
@@ -212,7 +215,7 @@ class Performance:
         velocity_feature = 1 - sum(velocity_diff) / matching_notes
         duration_feature = 1 - sum(duration_diff) / matching_notes
         pitch_feature = matching_notes / len(orig_pitch_list)
-        tempo_feature = 1-(abs(self.orig_tempo-self.tempo)/self.orig_tempo)
+        tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
         return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
 
     def supervised_blocks_diff(self, blocks):
