@@ -4,8 +4,7 @@
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 
 import Performance_class
+import auxiliary
 
-test = Performance_class.Performance('musicsamples/midi_test_2021_05_14_18_35_45_Jason_ShirEres.mid',
-                                     'HaAviv', 'Jason', 'musicsamples/93a_ShirEres.midi')
-# HaAviv.visualise()
-print(test.mistake_gen_check("rhythm", 0.7))
+test_data = auxiliary.create_random_mistakes("musicsamples/97b_AchbarHizaher.midi", "HaKovaSheli", 100, 0.5, 1)
+

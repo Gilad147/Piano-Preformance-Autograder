@@ -29,8 +29,8 @@ class Performance:
                 velocity = note.velocity
                 midi_list.append([start, end, pitch, velocity, instrument.name])
 
-        midi_list = sorted(midi_list, key=lambda x: (x[0], x[2]))
         self.midi_df = pd.DataFrame(midi_list, columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
+        self.midi_df = np.sort(self.midi_df, 0)
 
         midi_data_orig = pretty_midi.PrettyMIDI(original_path)
         midi_list_orig = []
@@ -42,9 +42,9 @@ class Performance:
                 velocity = note.velocity
                 midi_list_orig.append([start, end, pitch, velocity, instrument.name])
 
-        midi_list_orig = sorted(midi_list_orig, key=lambda x: (x[0], x[2]))
         self.original = pd.DataFrame(midi_list_orig,
                                      columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
+        self.original = np.sort(self.original, 0)
 
     def visualise(self):
         score = []
@@ -77,8 +77,15 @@ class Performance:
             i += chord_index
         return chords
 
-    def mistakes_generator(self, feature, noise=0.75, percentage=1):
-        new_midi_df = np.copy(self.original)
+    def mistakes_generator(self, feature, noise=0.75, percentage=1, original=True):
+        if original:
+            new_midi_df = np.copy(self.original)
+        else:
+            new_midi_df = np.copy(self.midi_df)
+
+        if noise > 1 or noise < 0 or percentage < 0 or percentage > 1:
+            print("Input values should be between 0 and 1")
+
         if feature == "rhythm":
             accumulation_mistake = 0
             for i, note in enumerate(new_midi_df):
@@ -93,13 +100,16 @@ class Performance:
         if feature == "velocity":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
-                    note[3] *= 1+noise
-        return new_midi_df
-
-    def mistake_gen_check(self, feature, noise=0.75, percentage=1):
-        new_midi_df = self.mistakes_generator(feature, noise, percentage)
+                    note[3] *= 1 + noise
+        if feature == "pitch":
+            for note in new_midi_df:
+                if np.random.rand() < percentage:
+                    note[2] = 1 + note[2]
         self.midi_df = new_midi_df
-        return self.get_features()
+
+    def classifier(self):
+
+        logisticRegr = skl.linear_model.LogisticRegression()
 
     def baseline_grader(self, sigma=20):
         """
@@ -233,8 +243,8 @@ class Performance:
             stud_set_time = stud[stud_start, 0]
             for i in range(orig_start, orig_start + block[2]):
                 # testing the block's grades of timing and velocity
-                cur_orig_note = orig[i]
-                cur_stud_note = stud[i]
+                cur_orig_note = np.copy(orig[i])
+                cur_stud_note = np.copy(stud[i])
 
                 # ignore note in further analysis
                 cur_stud_note[2] = 0
@@ -253,9 +263,7 @@ class Performance:
                 orig_duration = cur_orig_note[1] - cur_orig_note[0]
                 stud_duration = cur_stud_note[1] - cur_stud_note[0]
                 duration_diff.append(np.abs(orig_duration - stud_duration) / orig_duration)
-                # reset timing in original performance
-                cur_orig_note[0] = cur_orig_note[0] + orig_set_time
-                cur_orig_note[1] = cur_orig_note[1] + orig_set_time
+
         return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
     def timing_velocity_grader(self, orig_note, stud_note, sigma=10):
