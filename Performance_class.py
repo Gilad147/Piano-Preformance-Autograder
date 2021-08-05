@@ -80,9 +80,10 @@ class Performance:
     def mistakes_generator(self, feature, noise=0.75, percentage=1, original=True):
         if original:
             new_midi_df = np.copy(self.original)
+            reference = self.original
         else:
             new_midi_df = np.copy(self.midi_df)
-
+            reference = self.midi_df
         if noise > 1 or noise < 0 or percentage < 0 or percentage > 1:
             print("Input values should be between 0 and 1")
 
@@ -90,7 +91,7 @@ class Performance:
             accumulation_mistake = 0
             for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage and i > 0:
-                    accumulation_mistake += noise * (note[0] - self.original[i - 1][0])
+                    accumulation_mistake += noise * (note[0] - reference[i - 1][0])
                 note[0] += accumulation_mistake
                 note[1] += accumulation_mistake
         if feature == "duration":
