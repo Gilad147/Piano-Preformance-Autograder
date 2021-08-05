@@ -19,7 +19,7 @@ class Performance:
         self.midi_data = pretty_midi.PrettyMIDI(path)
         self.name = name
         self.player_name = player_name
-
+        self.tempo = self.midi_data.estimate_tempo()
         midi_list = []
         for instrument in self.midi_data.instruments:
             for note in instrument.notes:
@@ -33,6 +33,7 @@ class Performance:
         self.midi_df = np.sort(self.midi_df, 0)
 
         midi_data_orig = pretty_midi.PrettyMIDI(original_path)
+        self.orig_tempo = midi_data_orig.estimate_tempo()
         midi_list_orig = []
         for instrument in midi_data_orig.instruments:
             for note in instrument.notes:
@@ -211,7 +212,8 @@ class Performance:
         velocity_feature = 1 - sum(velocity_diff) / matching_notes
         duration_feature = 1 - sum(duration_diff) / matching_notes
         pitch_feature = matching_notes / len(orig_pitch_list)
-        return rhythm_feature, velocity_feature, duration_feature, pitch_feature
+        tempo_feature = 1-(abs(self.orig_tempo-self.tempo)/self.orig_tempo)
+        return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
 
     def supervised_blocks_diff(self, blocks):
         """
