@@ -104,7 +104,7 @@ class Performance:
                     note[3] *= 1 + noise
         if feature == "pitch":
             for note in new_midi_df:
-                if np.random.rand() < percentage:
+                if np.random.rand() < percentage/2:
                     note[2] = 1 + note[2]
         self.midi_df = new_midi_df
 
