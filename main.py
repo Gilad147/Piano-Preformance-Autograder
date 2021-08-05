@@ -6,8 +6,8 @@
 import Performance_class
 import auxiliary
 
-test_data = auxiliary.create_random_mistakes("musicsamples/74a_HaKovaSheli.midi", "HaKovaSheli", 100, min_noise=0,
+test_data = auxiliary.create_random_mistakes("musicsamples/91a_GinaLi.midi", "GinaLi", 100, min_noise=0,
                                              max_noise=0.2, min_percentage=0.1, max_percentage=0.2)
 for i, data in enumerate(test_data):
-    path = "musicsamples/HaKovaSheli/test" + str(i) + ".mid"
+    path = "musicsamples/GinaLi/test" + str(i) + ".mid"
     auxiliary.np2mid(data.midi_df, path)
