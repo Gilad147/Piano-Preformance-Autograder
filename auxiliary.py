@@ -2,6 +2,32 @@ import Performance_class
 import numpy as np
 from midiutil.MidiFile import MIDIFile
 import pretty_midi
+import os
+import shutil
+from pathlib import Path
+
+def generate_random_mistakes_data(folder, n, create_midi_files):
+    basepath = folder + '/'
+    all_data = []
+    if create_midi_files:
+        fake_data_path = folder + ' - fake data/'
+        Path(fake_data_path).mkdir(exist_ok=True)
+    with os.scandir(basepath) as songs:
+        for song in songs:
+            song_name = song.name.split(".")[0]
+            if song.is_file() and song.name != '.DS_Store':
+                fake_data = create_random_mistakes(basepath + song.name, song_name, n, min_noise=0,
+                                                   max_noise=1, min_percentage=0, max_percentage=1)
+                all_data += fake_data
+                if create_midi_files:
+                    Path(fake_data_path + song_name).mkdir(exist_ok=True)
+                    shutil.copy(basepath + song.name, fake_data_path + song_name)
+                    Path(fake_data_path + song_name + '/fake performances/').mkdir(exist_ok=True)
+                    for i, data in enumerate(fake_data):
+                        path = fake_data_path + song_name + '/fake performances/' + song_name + str(i) + ".mid"
+                        np2mid(data.midi_df, path)
+    return all_data
+
 
 
 def create_random_mistakes(path, name, n, max_noise, max_percentage, min_noise=0, min_percentage=0.5):
