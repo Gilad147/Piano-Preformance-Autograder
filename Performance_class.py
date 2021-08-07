@@ -15,44 +15,43 @@ class Chord:
 
 
 class Performance:
-    def __init__(self, path, name, player_name, original_path, np_performance=None, np_original=None):
+    def __init__(self, path, name, player_name, original_path, prettyMidiFile_performance= None, prettyMidiFile_original= None):
         self.name = name
         self.player_name = player_name
 
-        if path is not None and original_path is not None:
+        if prettyMidiFile_performance is None and prettyMidiFile_original is None:
             self.midi_data = pretty_midi.PrettyMIDI(path)
-            self.tempo = self.midi_data.estimate_tempo()
-            midi_list = []
-            for instrument in self.midi_data.instruments:
-                for note in instrument.notes:
-                    start = note.start
-                    end = note.end
-                    pitch = note.pitch
-                    velocity = note.velocity
-                    midi_list.append([start, end, pitch, velocity, instrument.name])
-
-            self.midi_df = pd.DataFrame(midi_list,
-                                        columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-            self.midi_df = np.sort(self.midi_df, 0)
-
-            midi_data_orig = pretty_midi.PrettyMIDI(original_path)
-            self.orig_tempo = midi_data_orig.estimate_tempo()
-            midi_list_orig = []
-            for instrument in midi_data_orig.instruments:
-                for note in instrument.notes:
-                    start = note.start
-                    end = note.end
-                    pitch = note.pitch
-                    velocity = note.velocity
-                    midi_list_orig.append([start, end, pitch, velocity, instrument.name])
-
-            self.original = pd.DataFrame(midi_list_orig,
-                                         columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-            self.original = np.sort(self.original, 0)
-
+            self.midi_data_original = pretty_midi.PrettyMIDI(original_path)
         else:
-            self.midi_df = np_performance
-            self.original = np_original
+            self.midi_data = prettyMidiFile_performance
+            self.midi_data_original = prettyMidiFile_original
+        self.tempo = self.midi_data.estimate_tempo()
+        midi_list = []
+        for instrument in self.midi_data.instruments:
+            for note in instrument.notes:
+                start = note.start
+                end = note.end
+                pitch = note.pitch
+                velocity = note.velocity
+                midi_list.append([start, end, pitch, velocity, instrument.name])
+
+        self.midi_df = pd.DataFrame(midi_list,
+                                    columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
+        self.midi_df = np.sort(self.midi_df, 0)
+
+        self.orig_tempo = self.midi_data_original.estimate_tempo()
+        midi_list_orig = []
+        for instrument in self.midi_data_original.instruments:
+            for note in instrument.notes:
+                start = note.start
+                end = note.end
+                pitch = note.pitch
+                velocity = note.velocity
+                midi_list_orig.append([start, end, pitch, velocity, instrument.name])
+
+        self.original = pd.DataFrame(midi_list_orig,
+                                     columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
+        self.original = np.sort(self.original, 0)
 
     def visualise(self):
         score = []
@@ -217,19 +216,22 @@ class Performance:
         return tempo_score, a_d_score, matching_notes
 
     def get_features(self):
-        orig = self.original
-        stud = self.midi_df
-        orig_pitch_list = orig[:, 2]
-        stud_pitch_list = stud[:, 2]
-        matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
-        blocks = matcher.get_matching_blocks()
-        rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
-        rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
-        velocity_feature = 1 - sum(velocity_diff) / matching_notes
-        duration_feature = 1 - sum(duration_diff) / matching_notes
-        pitch_feature = matching_notes / len(orig_pitch_list)
-        tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
-        return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
+        try:
+            orig = self.original
+            stud = self.midi_df
+            orig_pitch_list = orig[:, 2]
+            stud_pitch_list = stud[:, 2]
+            matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
+            blocks = matcher.get_matching_blocks()
+            rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
+            rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
+            velocity_feature = 1 - sum(velocity_diff) / matching_notes
+            duration_feature = 1 - sum(duration_diff) / matching_notes
+            pitch_feature = matching_notes / len(orig_pitch_list)
+            tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
+            return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
+        except:
+            return -1, 0, 0, 0, 0
 
     def supervised_blocks_diff(self, blocks):
         """

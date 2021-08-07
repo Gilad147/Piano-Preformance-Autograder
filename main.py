@@ -18,7 +18,15 @@ import Automated_teacher
 #
 # Automated_teacher.fake_teachers_algorithm('fake music samples')
 
-generated_data = auxiliary.generate_random_mistakes_data('original songs', 10000, False)
+# without creating MIDI files
+generated_data = auxiliary.generate_random_mistakes_data('original songs', 1000, False)
 Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data, number_of_teachers=10, train_ratio=0.3)
+
+
+# creating MIDI files
+# generated_data = auxiliary.generate_random_mistakes_data('original songs', 1000, True)
+# Automated_teacher.fake_teachers_algorithm(from_midi_files_or_not=True, folder='original songs',
+#                                           number_of_teachers=10, train_ratio=0.3)
+
 
 #print(auxiliary.generate_random_mistakes_data('original songs', 2, True))

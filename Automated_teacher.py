@@ -5,12 +5,14 @@ import os
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 
 
-def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ratio, folder=None, performances_data=None, ):
+def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ratio, folder=None, performances_data=None):
     all_performances_grades = []
     if from_midi_files_or_not:
-        basepath = folder + '/'
+        basepath = folder + ' - fake data/'
         with os.scandir(basepath) as songs:
             for song in songs:
                 if song.is_dir():
@@ -30,14 +32,16 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
                                         player_name='fake name',
                                         original_path=basepath + song_path + song_perfect_name) \
                                         .get_features()
-                                    all_performances_grades.append(
-                                        [rhythm_feature, velocity_feature, duration_feature, pitch_feature,
-                                         tempo_feature])
+                                    if rhythm_feature != -1:
+                                        all_performances_grades.append(
+                                            [rhythm_feature, velocity_feature, duration_feature, pitch_feature,
+                                             tempo_feature])
     else:
         for performance in performances_data:
             rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = performance.get_features()
-            all_performances_grades.append([rhythm_feature, velocity_feature, duration_feature, pitch_feature,
-                                            tempo_feature])
+            if rhythm_feature != -1:
+                all_performances_grades.append([rhythm_feature, velocity_feature, duration_feature, pitch_feature,
+                                                tempo_feature])
 
     teachers_grades, teachers_unique = fake_teachers_feedback(all_performances_grades, number=number_of_teachers)
 
@@ -74,21 +78,56 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
 
     #train, test = train_test_split(df_labeled, test_size=0.3)
 
-    test_algorithms(train, test)
+    test_algorithms(train, test, True)
+    test_algorithms(train, test, False)
 
-def test_algorithms(labeled_data_train, labeled_data_test):
+def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
+
+    if with_tempo:
+        x_train = labeled_data_train.drop(columns=['label'])
+        y_train = labeled_data_train['label']
+
+        x_test = labeled_data_test.drop(columns=['label'])
+        y_test = labeled_data_test['label']
+        print("##############")
+        print("With Tempo:")
+        print("##############")
+    else:
+        x_train = labeled_data_train.drop(columns=['label', 'Tempo'])
+        y_train = labeled_data_train['label']
+
+        x_test = labeled_data_test.drop(columns=['label', 'Tempo'])
+        y_test = labeled_data_test['label']
+        print('')
+        print("##############")
+        print("Without Tempo:")
+        print("##############")
 
     ### random forest
-    x_train = labeled_data_train.drop(columns=['label'])
-    y_train = labeled_data_train['label']
 
-    model = RandomForestClassifier()
-    model.fit(x_train, y_train)
+    model_rf_gini = RandomForestClassifier(criterion='gini')
+    model_rf_gini.fit(x_train, y_train)
 
-    x_test = labeled_data_test.drop(columns=['label'])
-    y_test = labeled_data_test['label']
+    print("Random Forest (gini) Score: " + str(model_rf_gini.score(x_test, y_test)))
 
-    print(model.score(x_test, y_test))
+    model_rf_entropy = RandomForestClassifier(criterion='entropy')
+    model_rf_entropy.fit(x_train, y_train)
+
+    print("Random Forest (entropy) Score: " + str(model_rf_entropy.score(x_test, y_test)))
+
+    ### logistic regression (classification)
+
+    model_lr = LogisticRegression(max_iter=1000)
+    model_lr.fit(x_train, y_train)
+
+    print("Logistic Regression Score: " + str(model_lr.score(x_test, y_test)))
+
+    ### knn (classification)
+
+    for i in range(3, 10):
+        model_knn = KNeighborsClassifier(n_neighbors=i)
+        model_knn.fit(x_train, y_train)
+        print("KNN with k = " + str(i) + " Score: " + str(model_knn.score(x_test, y_test)))
 
 
 def fake_teachers_feedback(performances, number):
