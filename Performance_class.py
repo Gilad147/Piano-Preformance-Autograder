@@ -53,6 +53,30 @@ class Performance:
                                      columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
         self.original = np.sort(self.original, 0)
 
+    def predict_grades(self, technical_grades):
+        return None
+
+    def predict_reccomendation(self, technical_grades):
+        return None
+
+    def get_features(self):
+        try:
+            orig = self.original
+            stud = self.midi_df
+            orig_pitch_list = orig[:, 2]
+            stud_pitch_list = stud[:, 2]
+            matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
+            blocks = matcher.get_matching_blocks()
+            rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
+            rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
+            velocity_feature = 1 - sum(velocity_diff) / matching_notes
+            duration_feature = 1 - sum(duration_diff) / matching_notes
+            pitch_feature = matching_notes / len(orig_pitch_list)
+            tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
+            return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
+        except:
+            return -1, 0, 0, 0, 0
+
     def visualise(self):
         score = []
         for instrument in self.midi_data.instruments:
@@ -130,7 +154,6 @@ class Performance:
 
     def baseline_grader(self, sigma=20):
         """
-
         :param sigma: sigma for error functions
         :return: Dictionary with performance grades
         """
@@ -215,23 +238,6 @@ class Performance:
 
         return tempo_score, a_d_score, matching_notes
 
-    def get_features(self):
-        try:
-            orig = self.original
-            stud = self.midi_df
-            orig_pitch_list = orig[:, 2]
-            stud_pitch_list = stud[:, 2]
-            matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
-            blocks = matcher.get_matching_blocks()
-            rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
-            rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
-            velocity_feature = 1 - sum(velocity_diff) / matching_notes
-            duration_feature = 1 - sum(duration_diff) / matching_notes
-            pitch_feature = matching_notes / len(orig_pitch_list)
-            tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
-            return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
-        except:
-            return -1, 0, 0, 0, 0
 
     def supervised_blocks_diff(self, blocks):
         """
