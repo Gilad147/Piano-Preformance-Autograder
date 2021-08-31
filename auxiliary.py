@@ -73,9 +73,8 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
     performance.instruments.append(piano)
     if write_midi_file:
         performance.write(midfilename)
-    else:
-        return_performance = Performance_class.Performance(path=None, name="name", player_name="name", original_path=None,
+    return_performance = Performance_class.Performance(path=None, name="name", player_name="name", original_path=None,
                                                            prettyMidiFile_performance=performance,
                                                            prettyMidiFile_original=original_midi_file)
-        return return_performance
+    return return_performance
 

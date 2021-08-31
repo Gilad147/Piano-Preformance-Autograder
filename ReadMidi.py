@@ -1,5 +1,6 @@
 import itertools
 import math
+import os
 
 import pyaudio
 import pygame
@@ -11,15 +12,18 @@ from PIL import ImageTk, Image
 import tkinter.font as tkFont
 import numpy as np
 from pygame.midi import midi_to_frequency
-#from Performance_class import get_score
+from Performance_class import Performance
+from auxiliary import np2mid
+import pretty_midi
+import pandas as pd
 
 
 # Helper Functions
-def midi(chart_path):
+def midi(chart_path, original_midi, subject_id, song_name):
     Raw_Input = np.zeros((1, 4))
 
     def input_design(Raw_Input):
-        New_Input = np.zeros((1,4))
+        New_Input = np.zeros((1, 4))
         i = 1
         for row in range(len(Raw_Input)):
             if Raw_Input[row][1] == 144:
@@ -34,7 +38,7 @@ def midi(chart_path):
                         New_Input[i][1] = Raw_Input[indexer][0]
                         Found_next = True
                         i += 1
-        return New_Input[1:].astype(int)
+        return New_Input[1:].astype(float)
 
     def exit_application():
         MsgBox = messagebox.askquestion('End of Trial', 'Thank you for participating \n your score is being calculated \n '
@@ -48,10 +52,29 @@ def midi(chart_path):
             exit()
 
     def stop():
-        print(input_design(Raw_Input[1:].astype('int')))
-        #chart_path = get_score(Raw_Input[1:].astype('int'))
+        Data_Played = input_design(Raw_Input[1:].astype('float32'))
+        print(Data_Played[:, 0] / 100)
+        Data_Played[:, 0] = Data_Played[:, 0] / 100
+        Data_Played[:, 1] = Data_Played[:, 1] / 100
+        #new_col = np.full((Data_Played.shape[0], 1), 'piano')
+        #array_for_np2mid = np.append(Data_Played.astype("str"), new_col, axis=1)
+        #df = pd.DataFrame(array_for_np2mid)
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
+        name_of_file = song_name
+        completeName = os.path.join(root_path, name_of_file + ".txt")
+        with open(completeName, 'w') as output:
+            for row in Data_Played:
+                output.write(str(row) + '\n')
+        midi_path_to_save = os.path.join(root_path, name_of_file + ".midi")
+        print(Data_Played)
+        print(original_midi)
+        file_midi = np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
+        performance = Performance(file_midi, song_name, subject_id, original_midi, prettyMidiFile_performance= None, prettyMidiFile_original= None)
+        tech_grades = performance.get_features()
+        recomendation = performance.predict_reccomendation(tech_grades)
+        grades = performance.predict_grades(tech_grades)
         exit_application()
-        midi(chart_path)
+        midi(chart_path, original_midi, subject_id, song_name)
 
     def place_stop_button():
         photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
