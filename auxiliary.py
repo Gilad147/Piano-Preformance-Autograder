@@ -5,6 +5,11 @@ import pretty_midi
 import os
 import shutil
 from pathlib import Path
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 
 
 def generate_random_mistakes_data(folder, n, create_midi_files):
@@ -18,8 +23,8 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
             song_name = song.name.split(".")[0]
             if song.is_file() and song.name != '.DS_Store':
                 flawed_performances, original_midi_data = create_random_mistakes(basepath + song.name, song_name, n,
-                                                                                    min_noise=0, max_noise=1,
-                                                                                    min_percentage=0, max_percentage=1)
+                                                                                 min_noise=0.25, max_noise=0.9,
+                                                                                 min_percentage=0.4, max_percentage=1)
                 if create_midi_files:
                     Path(fake_data_path + song_name).mkdir(exist_ok=True)
                     shutil.copy(basepath + song.name, fake_data_path + song_name)
@@ -73,8 +78,70 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
     performance.instruments.append(piano)
     if write_midi_file:
         performance.write(midfilename)
-    return_performance = Performance_class.Performance(path=None, name="name", player_name="name", original_path=None,
+    else:
+        return_performance = Performance_class.Performance(path=None, name="name", player_name="name",
+                                                           original_path=None,
                                                            prettyMidiFile_performance=performance,
                                                            prettyMidiFile_original=original_midi_file)
-    return return_performance
+        return return_performance
 
+
+def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
+    if with_tempo:
+        x_train = labeled_data_train.drop(columns=['label'])
+        y_train = labeled_data_train['label']
+
+        x_test = labeled_data_test.drop(columns=['label'])
+        y_test = labeled_data_test['label']
+        print("##############")
+        print("With Tempo:")
+        print("##############")
+    else:
+        x_train = labeled_data_train.drop(columns=['label', 'Tempo'])
+        y_train = labeled_data_train['label']
+
+        x_test = labeled_data_test.drop(columns=['label', 'Tempo'])
+        y_test = labeled_data_test['label']
+        print('')
+        print("##############")
+        print("Without Tempo:")
+        print("##############")
+
+    ### random forest
+
+    model_rf_gini = RandomForestClassifier(criterion='gini')
+    model_rf_gini.fit(x_train, y_train)
+    random_forest_gini_score = model_rf_gini.score(x_test, y_test)
+
+    print("Random Forest (gini) Score: " + str(random_forest_gini_score))
+
+    model_rf_entropy = RandomForestClassifier(criterion='entropy')
+    model_rf_entropy.fit(x_train, y_train)
+    random_forest_entropy_score = model_rf_entropy.score(x_test, y_test)
+
+    print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
+
+    ### logistic regression (classification)
+
+    model_lr = LogisticRegression(max_iter=1000)
+    model_lr.fit(x_train, y_train)
+    logistic_regression_score = model_lr.score(x_test, y_test)
+    print("Logistic Regression Score: " + str(logistic_regression_score))
+
+    ### knn (classification)
+    max_knn_score = 0
+    for i in range(3, 10):
+        model_knn = KNeighborsClassifier(n_neighbors=i)
+        model_knn.fit(x_train, y_train)
+        knn_score = model_knn.score(x_test, y_test)
+        print("KNN with k = " + str(i) + " Score: " + str(knn_score))
+        if knn_score > max_knn_score:
+            max_knn_score = knn_score
+
+    model_mlp = MLPClassifier()
+    model_mlp.fit(x_train, y_train)
+    mlp_score = model_mlp.score(x_test, y_test)
+    ### MLP (classification)
+
+    print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
+    return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score

@@ -1,7 +1,3 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 import time
 
 import Performance_class
@@ -19,8 +15,8 @@ import Automated_teacher
 # Automated_teacher.fake_teachers_algorithm('fake music samples')
 
 # without creating MIDI files
-generated_data = auxiliary.generate_random_mistakes_data('original songs', 1000, False)
-Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data, number_of_teachers=10, train_ratio=0.3)
+generated_data = auxiliary.generate_random_mistakes_data('original songs', 3, False)
+Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data, number_of_teachers=8, train_ratio=0.3)
 
 
 # creating MIDI files

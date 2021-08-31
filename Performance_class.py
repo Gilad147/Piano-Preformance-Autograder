@@ -7,15 +7,9 @@ from difflib import SequenceMatcher
 import sklearn as skl
 
 
-class Chord:
-    def __init__(self, notes):
-        self.notes = np.sort(notes, axis=0)
-        self.root = np.min(notes[:, 0])
-        self.is_single_note = (notes.shape[0] == 1)
-
-
 class Performance:
-    def __init__(self, path, name, player_name, original_path, prettyMidiFile_performance= None, prettyMidiFile_original= None):
+    def __init__(self, path, name, player_name, original_path, prettyMidiFile_performance=None,
+                 prettyMidiFile_original=None):
         self.name = name
         self.player_name = player_name
 
@@ -71,8 +65,8 @@ class Performance:
             rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
             velocity_feature = 1 - sum(velocity_diff) / matching_notes
             duration_feature = 1 - sum(duration_diff) / matching_notes
-            pitch_feature = matching_notes / len(orig_pitch_list)
-            tempo_feature = 1 - (abs(self.orig_tempo - self.tempo) / self.orig_tempo)
+            pitch_feature = matcher.ratio()
+            tempo_feature = 1 - (min(abs(self.orig_tempo - self.tempo) / self.orig_tempo, 1))
             return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
         except:
             return -1, 0, 0, 0, 0
@@ -88,25 +82,6 @@ class Performance:
                 score.append([start, duration, pitch, velocity, instrument.name])
         fig, ax = libfmp.c1.visualize_piano_roll(score, figsize=(8, 3), velocity_alpha=True)
         plt.show()
-
-    def get_chords_list(self):
-        """
-
-        :return: a list of the chords and single notes played in the performance
-        """
-        chords = []
-        i = 0
-        per_np = self.midi_df
-        while i < per_np.shape[0]:
-            chord_index = 1
-
-            while i + chord_index < per_np.shape[0] and abs(per_np[i][0] - per_np[i + chord_index][0]) < 0.0005 and \
-                    abs(per_np[i][1] - per_np[i + chord_index][1]) < 0.05:
-                chord_index += 1
-            current_chord = per_np[i:i + chord_index][:, 2:4]
-            chords.append(Chord(current_chord))
-            i += chord_index
-        return chords
 
     def mistakes_generator(self, feature, noise=0.75, percentage=1, original=True):
         if original:
@@ -135,11 +110,11 @@ class Performance:
         if feature == "velocity":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
-                    new_value = note[3] * (1+noise/2)
+                    new_value = note[3] * (1 + noise / 2)
                     if 0 <= new_value <= 127:
                         note[3] = new_value
                     else:
-                        new_value = note[3] * (1-noise/2)
+                        new_value = note[3] * (1 - noise / 2)
                         if 0 <= new_value <= 127:
                             note[3] = new_value
         if feature == "pitch":
@@ -237,7 +212,6 @@ class Performance:
                 cur_orig_note[1] = cur_orig_note[1] + orig_set_time
 
         return tempo_score, a_d_score, matching_notes
-
 
     def supervised_blocks_diff(self, blocks):
         """
