@@ -7,7 +7,7 @@ from ReadMidi import midi
 from tkinter import ttk
 
 
-def play_GUI(chart_path):
+def play_GUI():
     # Initialize GUI window
     window = Tk()
     window.title("First Stage")
@@ -143,32 +143,4 @@ def play_GUI(chart_path):
 
 
 if __name__ == '__main__':
-    chart_path = '/Users/orpeleg/Desktop/91b+lifneishanimrabot'
-    play_GUI(chart_path)
-
-
-
-
-
-
-#def stop_record_buttons():
- #   #def stop():
-  #   #   messagebox.showinfo('End of Trial', 'Thank you for participating')
-   #   #  window.destroy()
-
-#    def change_buttons():
- #       record_button.destroy()
-  #      photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
-   #     photo2 = photo2.subsample(3, 3)
-    #    stop_button = Button(window, text='Stop', image=photo2, command=stop)
-     #   stop_button.image = photo2
-      #  stop_button.place(x=50, y=150)
-       # #place_note_chart('/Users/orpeleg/Desktop/91b+lifneishanimrabot')
-
-    #def record():
-     #   change_buttons()
-    #photo = PhotoImage(file='/Users/orpeleg/Desktop/record.png')
-    #photo = photo.subsample(3, 3)
-    #record_button = Button(window, text='Record', image=photo, command=record)
-    #record_button.image = photo
-    #record_button.place(x=50, y=150)
+    play_GUI()

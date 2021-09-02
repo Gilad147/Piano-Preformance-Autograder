@@ -47,18 +47,13 @@ def midi(chart_path, original_midi, subject_id, song_name):
         keyboard.close()
         pygame.midi.quit()
         pygame.quit()
-        window.destroy()
         if MsgBox == 'no':
-            exit()
+            return True
 
     def stop():
         Data_Played = input_design(Raw_Input[1:].astype('float32'))
-        print(Data_Played[:, 0] / 100)
-        Data_Played[:, 0] = Data_Played[:, 0] / 100
-        Data_Played[:, 1] = Data_Played[:, 1] / 100
-        #new_col = np.full((Data_Played.shape[0], 1), 'piano')
-        #array_for_np2mid = np.append(Data_Played.astype("str"), new_col, axis=1)
-        #df = pd.DataFrame(array_for_np2mid)
+        Data_Played[:, 0] = Data_Played[:, 0] / 1000
+        Data_Played[:, 1] = Data_Played[:, 1] / 1000
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
         name_of_file = song_name
         completeName = os.path.join(root_path, name_of_file + ".txt")
@@ -66,15 +61,24 @@ def midi(chart_path, original_midi, subject_id, song_name):
             for row in Data_Played:
                 output.write(str(row) + '\n')
         midi_path_to_save = os.path.join(root_path, name_of_file + ".midi")
-        print(Data_Played)
-        print(original_midi)
-        file_midi = np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
-        performance = Performance(file_midi, song_name, subject_id, original_midi, prettyMidiFile_performance= None, prettyMidiFile_original= None)
+        np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
+        performance = Performance(midi_path_to_save, song_name, subject_id, original_midi, prettyMidiFile_performance= None, prettyMidiFile_original= None)
         tech_grades = performance.get_features()
-        recomendation = performance.predict_reccomendation(tech_grades)
+        print(tech_grades)
+
+        recommendation = performance.predict_reccomendation(tech_grades)
         grades = performance.predict_grades(tech_grades)
-        exit_application()
-        midi(chart_path, original_midi, subject_id, song_name)
+
+        # message_to_user = feedback_by_grades_recommendation
+        # add option to choose different assignment
+        # chart path, original_midi, song_name = next_action_by_recommendation
+        stopping = exit_application()
+        if stopping:
+            for widget in window.winfo_children():
+                widget.destroy()
+            window.destroy()
+        else:
+            midi(chart_path, original_midi, subject_id, song_name)
 
     def place_stop_button():
         photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
