@@ -89,10 +89,10 @@ def fake_teachers_feedback(performances, number):
     results = []
     teachers_unique_data = []
     for i in range(number):
-        pitch_unique = round(random.uniform(-0.1, 0.1), 2)
-        rhythm_unique = round(random.uniform(-0.2, 0.2), 2)
-        tempo_unique = round(random.uniform(-0.2, 0.2), 2)
-        articulation_unique = round(random.uniform(-0.2, 0.2), 2)
+        pitch_unique = round(random.uniform(-0.15, 0.15), 2)
+        rhythm_unique = round(random.uniform(-0.25, 0.25), 2)
+        tempo_unique = round(random.uniform(-0.25, 0.25), 2)
+        articulation_unique = round(random.uniform(-0.25, 0.25), 2)
         dynamics_unique = round(random.uniform(-0.3, 0.3), 2)
         teachers_unique_data.append([pitch_unique, rhythm_unique, tempo_unique, articulation_unique, dynamics_unique])
 

@@ -86,26 +86,28 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
         return return_performance
 
 
-def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
+def test_algorithms(labeled_data_train, labeled_data_test, with_tempo, to_print=True):
     if with_tempo:
         x_train = labeled_data_train.drop(columns=['label'])
         y_train = labeled_data_train['label']
 
         x_test = labeled_data_test.drop(columns=['label'])
         y_test = labeled_data_test['label']
-        print("##############")
-        print("With Tempo:")
-        print("##############")
+        if to_print:
+            print("##############")
+            print("With Tempo:")
+            print("##############")
     else:
         x_train = labeled_data_train.drop(columns=['label', 'Tempo'])
         y_train = labeled_data_train['label']
 
         x_test = labeled_data_test.drop(columns=['label', 'Tempo'])
         y_test = labeled_data_test['label']
-        print('')
-        print("##############")
-        print("Without Tempo:")
-        print("##############")
+        if to_print:
+            print('')
+            print("##############")
+            print("Without Tempo:")
+            print("##############")
 
     ### random forest
 
@@ -113,20 +115,15 @@ def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
     model_rf_gini.fit(x_train, y_train)
     random_forest_gini_score = model_rf_gini.score(x_test, y_test)
 
-    print("Random Forest (gini) Score: " + str(random_forest_gini_score))
-
     model_rf_entropy = RandomForestClassifier(criterion='entropy')
     model_rf_entropy.fit(x_train, y_train)
     random_forest_entropy_score = model_rf_entropy.score(x_test, y_test)
-
-    print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
 
     ### logistic regression (classification)
 
     model_lr = LogisticRegression(max_iter=1000)
     model_lr.fit(x_train, y_train)
     logistic_regression_score = model_lr.score(x_test, y_test)
-    print("Logistic Regression Score: " + str(logistic_regression_score))
 
     ### knn (classification)
     max_knn_score = 0
@@ -134,7 +131,8 @@ def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
         knn_score = model_knn.score(x_test, y_test)
-        print("KNN with k = " + str(i) + " Score: " + str(knn_score))
+        if to_print:
+            print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
 
@@ -143,5 +141,10 @@ def test_algorithms(labeled_data_train, labeled_data_test, with_tempo):
     mlp_score = model_mlp.score(x_test, y_test)
     ### MLP (classification)
 
-    print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
+    if to_print:
+        print("Random Forest (gini) Score: " + str(random_forest_gini_score))
+        print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
+        print("Logistic Regression Score: " + str(logistic_regression_score))
+        print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
+
     return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score
