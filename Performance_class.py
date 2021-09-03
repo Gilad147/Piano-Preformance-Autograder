@@ -62,6 +62,8 @@ class Performance:
             matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
             blocks = matcher.get_matching_blocks()
             rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
+            if matching_notes == 0:
+                return 0, 0, 0, 0, 0
             rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
             velocity_feature = 1 - sum(velocity_diff) / matching_notes
             duration_feature = 1 - sum(duration_diff) / matching_notes

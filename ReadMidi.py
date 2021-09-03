@@ -1,7 +1,6 @@
 import itertools
 import math
 import os
-
 import pyaudio
 import pygame
 import pygame.midi
@@ -15,8 +14,7 @@ from pygame.midi import midi_to_frequency
 from Performance_class import Performance
 from auxiliary import np2mid
 import pretty_midi
-import pandas as pd
-
+from datetime import datetime
 
 # Helper Functions
 def midi(chart_path, original_midi, subject_id, song_name):
@@ -41,26 +39,43 @@ def midi(chart_path, original_midi, subject_id, song_name):
         return New_Input[1:].astype(float)
 
     def exit_application():
-        MsgBox = messagebox.askquestion('End of Trial', 'Thank you for participating \n your score is being calculated \n '
-                                           'do you want to keep training?',
-                                           icon='warning')
+        MsgBox = messagebox.askquestion('End of Trial', 'Thank you for participating '
+                                                        '\n your score is being calculated \n '
+                                                        'do you want to keep training?',
+                                                        icon='warning')
         keyboard.close()
         pygame.midi.quit()
         pygame.quit()
         if MsgBox == 'no':
             return True
 
+    def directories(Data_Played):
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
+        date_directory = datetime.date(datetime.now())
+        complete_date_directory = os.path.join(root_path, str(date_directory))
+        if not os.path.exists(complete_date_directory):
+            os.mkdir(complete_date_directory)
+        directory_of_subject = subject_id
+        complete_subject_directory = os.path.join(complete_date_directory, directory_of_subject)
+        if not os.path.exists(complete_subject_directory):
+            os.mkdir(complete_subject_directory)
+        now_time = str(datetime.time(datetime.now()))
+        if len(now_time) == 15:
+            now_time = now_time[:-7]
+        else:
+            now_time = now_time[:-6]
+        completeName = os.path.join(complete_subject_directory, now_time + "-" + song_name + ".txt")
+        midi_path_to_save = os.path.join(complete_subject_directory, now_time + "-" + song_name + ".midi")
+        with open(completeName, 'w') as output:
+            for row in Data_Played:
+                output.write(str(row) + '\n')
+        return midi_path_to_save
+
     def stop():
         Data_Played = input_design(Raw_Input[1:].astype('float32'))
         Data_Played[:, 0] = Data_Played[:, 0] / 1000
         Data_Played[:, 1] = Data_Played[:, 1] / 1000
-        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
-        name_of_file = song_name
-        completeName = os.path.join(root_path, name_of_file + ".txt")
-        with open(completeName, 'w') as output:
-            for row in Data_Played:
-                output.write(str(row) + '\n')
-        midi_path_to_save = os.path.join(root_path, name_of_file + ".midi")
+        midi_path_to_save = directories(Data_Played)
         np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
         performance = Performance(midi_path_to_save, song_name, subject_id, original_midi, prettyMidiFile_performance= None, prettyMidiFile_original= None)
         tech_grades = performance.get_features()
@@ -72,12 +87,14 @@ def midi(chart_path, original_midi, subject_id, song_name):
         # message_to_user = feedback_by_grades_recommendation
         # add option to choose different assignment
         # chart path, original_midi, song_name = next_action_by_recommendation
+
         stopping = exit_application()
         if stopping:
             for widget in window.winfo_children():
                 widget.destroy()
             window.destroy()
         else:
+            window.destroy()
             midi(chart_path, original_midi, subject_id, song_name)
 
     def place_stop_button():
@@ -115,7 +132,7 @@ def midi(chart_path, original_midi, subject_id, song_name):
     window.title("Trial")
     window.geometry("850x300+10+10")
     window.resizable(width=FALSE, height=FALSE)
-    #window['bg']='#33ABFF'
+    # window['bg']='#33ABFF'
     fontStyle = tkFont.Font(family="Calibri", size=17)
     myLabel1 = Label(window, text="Press the button to stop recording", font=fontStyle)
     myLabel1.place(x=50, y=0)
@@ -125,7 +142,7 @@ def midi(chart_path, original_midi, subject_id, song_name):
     # Initialize MIDI
     pygame.init()
     pygame.midi.init()
-    print("There are " + str(pygame.midi.get_count()) + " MIDI devices")
+    # print("There are " + str(pygame.midi.get_count()) + " MIDI devices")
     input_id = pygame.midi.get_default_input_id()
     if input_id == -1:
         print("Please connect a MIDI device and try again")
@@ -134,7 +151,7 @@ def midi(chart_path, original_midi, subject_id, song_name):
     pygame.display.set_caption("midi test")
     print("starting")
     going = True
-    FirstNote = False
+    Started = False
     try:
         notes_dict = {}
         while going:
@@ -156,9 +173,9 @@ def midi(chart_path, original_midi, subject_id, song_name):
                     if keyboard.poll():
                         midi_events = keyboard.read(10)
                         if midi_events[0][0][1] != 1:
-                            if not FirstNote:
+                            if not Started:
                                 time = midi_events[0][1]
-                                FirstNote = True
+                                Started = True
                             edited_midi_event = [midi_events[0][1] - time] + midi_events[0][0][:-1]
                             Raw_Input = np.append(Raw_Input, [edited_midi_event], axis=0)
                             print(midi_events)
@@ -171,6 +188,7 @@ def midi(chart_path, original_midi, subject_id, song_name):
                                 notes_dict[note] = get_sin_oscillator(freq=freq, amp=vel / 500)
     except KeyboardInterrupt as err:
         print("Stopping...")
+
 
 """
 reads num_events midi events from the buffer.

@@ -29,7 +29,7 @@ def play_GUI():
     myLabel2.place(x=60, y=72)
     subject_ID = Entry(window, width=15, font=fontStyle)
     subject_ID.place(x=95, y=70)
-    user_id = subject_ID.get()
+    save_user_id_arr = []
 
     def pathto_dict(path):
         dir = {}
@@ -104,7 +104,6 @@ def play_GUI():
         ok1.place(x=320, y=30)
 
         def confirm():
-            # ChosenSong = directory_tree['project directory']['songs'][typeChosen.get()][songChosen.get()]
             chosen_song = songChosen.get()
             directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
             original_midi = directory_encoder_midi[chosen_song]
@@ -112,7 +111,7 @@ def play_GUI():
             if songChosen.get() != "":
                 messagebox.showinfo('Attention', 'The trial will now begin')
             window.destroy()
-            midi(chart_path, original_midi, user_id, chosen_song)
+            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song)
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)
 
@@ -131,6 +130,8 @@ def play_GUI():
     def clicked():
         sub_id = str(subject_ID.get())
         if len(sub_id) == 9 and is_id(sub_id):
+            user_id = subject_ID.get()
+            save_user_id_arr.append(user_id)
             messagebox.showinfo('Thank you for your cooperation', 'You are transferred to the trial window \nGood luck')
             second_stage()
         else:
@@ -139,7 +140,6 @@ def play_GUI():
     btn = Button(window, text="Enter", command=clicked)
     btn.place(x=163, y=120)
     window.mainloop()
-    # midi(chart_path, original_midi, subject_ID)
 
 
 if __name__ == '__main__':
