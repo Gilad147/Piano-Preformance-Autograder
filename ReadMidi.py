@@ -15,6 +15,8 @@ from Performance_class import Performance
 from auxiliary import np2mid
 import pretty_midi
 from datetime import datetime
+import bisect
+
 
 # Helper Functions
 def midi(chart_path, original_midi, subject_id, song_name):
@@ -38,11 +40,34 @@ def midi(chart_path, original_midi, subject_id, song_name):
                         i += 1
         return New_Input[1:].astype(float)
 
-    def exit_application():
-        MsgBox = messagebox.askquestion('End of Trial', 'Thank you for participating '
-                                                        '\n your score is being calculated \n '
-                                                        'do you want to keep training?',
-                                                        icon='warning')
+    def determine_grade_feedback(scores, breakpoints=[0.3, 0.5, 0.7, 0.8, 0.9],
+                                 grades=['bad', 'ok', 'good', 'great', 'excellent', 'amazing']):
+        i = bisect.bisect(breakpoints, scores)
+        return grades[i]
+
+    def determine_overall_feedback(scores, breakpoints=[0.4, 0.7, 0.9],
+                                   grades=['there is still some work to do',
+                                           'you did a good job', 'it was excellent playing']):
+        i = bisect.bisect(breakpoints, scores)
+        return grades[i]
+
+    def exit_application(grades, recommendation):
+        overall_feedback = determine_overall_feedback(np.average(np.array(grades)))
+        pitching_feedback = determine_grade_feedback(grades[3])
+        tempo_feedback = determine_grade_feedback(grades[4])
+        rhythm_feedback = determine_grade_feedback(grades[0])
+        velocity_feedback = determine_grade_feedback(grades[1])
+        recommendation_feedback = 'play slower'
+        feedback_message = overall_feedback + '\n' \
+                           + ' please pay attention to this technicals: ' + '\n' + '\n' \
+                           + 'your pitching is ' + pitching_feedback + '\n' \
+                           + 'tempo is ' + tempo_feedback + '\n' \
+                           + 'rhythm is ' + rhythm_feedback + '\n' \
+                           + 'and articulation ' + velocity_feedback + '\n'
+        MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
+                                        'I advice you to ' + recommendation_feedback + '\n'
+                                        'do you want to keep training?',
+                                        icon='warning')
         keyboard.close()
         pygame.midi.quit()
         pygame.quit()
@@ -77,18 +102,19 @@ def midi(chart_path, original_midi, subject_id, song_name):
         Data_Played[:, 1] = Data_Played[:, 1] / 1000
         midi_path_to_save = directories(Data_Played)
         np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
-        performance = Performance(midi_path_to_save, song_name, subject_id, original_midi, prettyMidiFile_performance= None, prettyMidiFile_original= None)
+        performance = Performance(midi_path_to_save, song_name, subject_id, original_midi,
+                                  prettyMidiFile_performance=None, prettyMidiFile_original=None)
         tech_grades = performance.get_features()
         print(tech_grades)
 
-        recommendation = performance.predict_reccomendation(tech_grades)
         grades = performance.predict_grades(tech_grades)
+        recommendation = performance.predict_reccomendation(tech_grades)
 
         # message_to_user = feedback_by_grades_recommendation
         # add option to choose different assignment
         # chart path, original_midi, song_name = next_action_by_recommendation
 
-        stopping = exit_application()
+        stopping = exit_application(tech_grades, recommendation)
         if stopping:
             for widget in window.winfo_children():
                 widget.destroy()
@@ -125,7 +151,7 @@ def midi(chart_path, original_midi, subject_id, song_name):
     def get_samples(notes_dict, num_samples=70):
         return [sum([int(next(osc) * 32767) \
                      for _, osc in notes_dict.items()]) \
-                     for _ in range(num_samples)]
+                for _ in range(num_samples)]
 
     # GUI - Build Frame
     window = Tk()

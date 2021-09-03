@@ -13,7 +13,7 @@ def play_GUI():
     window.title("First Stage")
     window.geometry("365x215+10+10")
     window.resizable(width=FALSE, height=FALSE)
-    #window['bg']='#33ABFF'
+    # window['bg']='#33ABFF'
     fontStyle = tkFont.Font(family="Calibri", size=17)
 
     def do_nothing():
