@@ -7,13 +7,13 @@ from ReadMidi import midi
 from tkinter import ttk
 
 
-def play_GUI(chart_path):
+def play_GUI():
     # Initialize GUI window
     window = Tk()
     window.title("First Stage")
     window.geometry("365x215+10+10")
     window.resizable(width=FALSE, height=FALSE)
-    #window['bg']='#33ABFF'
+    # window['bg']='#33ABFF'
     fontStyle = tkFont.Font(family="Calibri", size=17)
 
     def do_nothing():
@@ -29,7 +29,7 @@ def play_GUI(chart_path):
     myLabel2.place(x=60, y=72)
     subject_ID = Entry(window, width=15, font=fontStyle)
     subject_ID.place(x=95, y=70)
-    user_id = subject_ID.get()
+    save_user_id_arr = []
 
     def pathto_dict(path):
         dir = {}
@@ -104,7 +104,6 @@ def play_GUI(chart_path):
         ok1.place(x=320, y=30)
 
         def confirm():
-            # ChosenSong = directory_tree['project directory']['songs'][typeChosen.get()][songChosen.get()]
             chosen_song = songChosen.get()
             directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
             original_midi = directory_encoder_midi[chosen_song]
@@ -112,7 +111,7 @@ def play_GUI(chart_path):
             if songChosen.get() != "":
                 messagebox.showinfo('Attention', 'The trial will now begin')
             window.destroy()
-            midi(chart_path, original_midi, user_id, chosen_song)
+            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song)
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)
 
@@ -131,6 +130,8 @@ def play_GUI(chart_path):
     def clicked():
         sub_id = str(subject_ID.get())
         if len(sub_id) == 9 and is_id(sub_id):
+            user_id = subject_ID.get()
+            save_user_id_arr.append(user_id)
             messagebox.showinfo('Thank you for your cooperation', 'You are transferred to the trial window \nGood luck')
             second_stage()
         else:
@@ -139,36 +140,7 @@ def play_GUI(chart_path):
     btn = Button(window, text="Enter", command=clicked)
     btn.place(x=163, y=120)
     window.mainloop()
-    # midi(chart_path, original_midi, subject_ID)
 
 
 if __name__ == '__main__':
-    chart_path = '/Users/orpeleg/Desktop/91b+lifneishanimrabot'
-    play_GUI(chart_path)
-
-
-
-
-
-
-#def stop_record_buttons():
- #   #def stop():
-  #   #   messagebox.showinfo('End of Trial', 'Thank you for participating')
-   #   #  window.destroy()
-
-#    def change_buttons():
- #       record_button.destroy()
-  #      photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
-   #     photo2 = photo2.subsample(3, 3)
-    #    stop_button = Button(window, text='Stop', image=photo2, command=stop)
-     #   stop_button.image = photo2
-      #  stop_button.place(x=50, y=150)
-       # #place_note_chart('/Users/orpeleg/Desktop/91b+lifneishanimrabot')
-
-    #def record():
-     #   change_buttons()
-    #photo = PhotoImage(file='/Users/orpeleg/Desktop/record.png')
-    #photo = photo.subsample(3, 3)
-    #record_button = Button(window, text='Record', image=photo, command=record)
-    #record_button.image = photo
-    #record_button.place(x=50, y=150)
+    play_GUI()

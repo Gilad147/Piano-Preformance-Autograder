@@ -73,7 +73,7 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
     piano = pretty_midi.Instrument(program=4)
     # Iterate over note names, which will be converted to note number later
     for m in np_performance:
-        note = pretty_midi.Note(velocity=int(m[3]), pitch=m[2], start=m[0], end=m[1])
+        note = pretty_midi.Note(velocity=int(m[3]), pitch=int(m[2]), start=m[0], end=m[1])
         piano.notes.append(note)
     performance.instruments.append(piano)
     if write_midi_file:
