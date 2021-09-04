@@ -23,7 +23,7 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
             song_name = song.name.split(".")[0]
             if song.is_file() and song.name != '.DS_Store':
                 flawed_performances, original_midi_data = create_random_mistakes(basepath + song.name, song_name, n,
-                                                                                 min_noise=0.25, max_noise=0.9,
+                                                                                 min_noise=0, max_noise=0.9,
                                                                                  min_percentage=0.4, max_percentage=1)
                 if create_midi_files:
                     Path(fake_data_path + song_name).mkdir(exist_ok=True)
@@ -148,7 +148,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         print("###########")
         print(" ")
 
-    return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score
+    return [random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score]
 
 
 def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_test, with_tempo, to_print=True):
@@ -260,7 +260,7 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
 
     ### logistic regression (classification)
 
-    model_lr = LogisticRegression(max_iter=1000)
+    model_lr = LogisticRegression(max_iter=5000)
     model_lr.fit(x_train, y_train)
     logistic_regression_score = model_lr.score(x_test, y_test)
 
@@ -302,7 +302,7 @@ def model_score(model_1, model_2, x_test, y_test):
         label_1 = model_1.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]
         label_2 = model_2.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]
         one_dimension_label = label_mapping[label_1][label_2]
-        if one_dimension_label == y_test[i]:
+        if one_dimension_label == str(y_test[i]):
             cnt += 1
     return cnt/len(x_test)
 
