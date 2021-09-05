@@ -19,7 +19,10 @@ import bisect
 
 
 # Helper Functions
-def midi(chart_path, original_midi, subject_id, song_name):
+def midi(chart_path, original_midi, subject_id, song_name, song_level):
+    print("song name: " + song_name, " song level: " + str(song_level))
+    print(chart_path)
+    print(original_midi)
     Raw_Input = np.zeros((1, 4))
 
     def input_design(Raw_Input):
@@ -46,8 +49,11 @@ def midi(chart_path, original_midi, subject_id, song_name):
         return grades[i]
 
     def determine_overall_feedback(scores, breakpoints=[0.4, 0.7, 0.9],
-                                   grades=['there is still some work to do',
-                                           'you did a good job', 'it was excellent playing']):
+                                   grades=None):
+        if grades is None:
+            grades = ['there is still some work to do',
+                      'you did a good job', 'you played very well'
+                                            'it was excellent playing']
         i = bisect.bisect(breakpoints, scores)
         return grades[i]
 
@@ -57,7 +63,9 @@ def midi(chart_path, original_midi, subject_id, song_name):
         tempo_feedback = determine_grade_feedback(grades[4])
         rhythm_feedback = determine_grade_feedback(grades[0])
         velocity_feedback = determine_grade_feedback(grades[1])
-        recommendation_feedback = 'play slower'
+        recommendation_dictionary = {'0': 'play slower', '1': 'play it again', '2': 'play faster',
+                                     '3': 'play this easier piece', '4': 'play another piece',
+                                     '5': 'play this harder piece'}
         feedback_message = overall_feedback + '\n' \
                            + ' please pay attention to this technicals: ' + '\n' + '\n' \
                            + 'your pitching is ' + pitching_feedback + '\n' \
@@ -65,7 +73,8 @@ def midi(chart_path, original_midi, subject_id, song_name):
                            + 'rhythm is ' + rhythm_feedback + '\n' \
                            + 'and articulation ' + velocity_feedback + '\n'
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
-                                        'I advice you to ' + recommendation_feedback + '\n'
+                                        'I advice you to '
+                                        + recommendation_dictionary[recommendation] + '\n'
                                         'do you want to keep training?',
                                         icon='warning')
         keyboard.close()
@@ -73,6 +82,51 @@ def midi(chart_path, original_midi, subject_id, song_name):
         pygame.quit()
         if MsgBox == 'no':
             return True
+
+    def reformat_file_by_type(file_name):
+        if 'ly' in file_name:
+            return file_name[:-3]
+        if 'png' in file_name:
+            return file_name[:-4]
+        if 'midi' in file_name:
+            return file_name[:-5]
+
+    def next_piece_by_level(level):
+        next_level = level
+        if level <= 0:
+            next_level = 0
+        if level >= 3:
+            next_level = 3
+        directories_by_levels = {0: 'initial exercises', 1: 'initial exercises2', 2: 'initial exercises3',
+                                 3: 'hebrew Collection'}
+        root_path = os.path.dirname(os.path.abspath('project directory/songs' + '/' + directories_by_levels[next_level]))
+        next_songbook_path = os.path.join(root_path, directories_by_levels[next_level])
+        files_in_songbook = os.listdir(next_songbook_path)
+        chosen_piece = np.random.randint(0, len(files_in_songbook) / 3)
+        name = reformat_file_by_type(files_in_songbook[chosen_piece])
+        while name == song_name:
+            chosen_piece = np.random.randint(0, len(files_in_songbook) / 3)
+            name = reformat_file_by_type(files_in_songbook[chosen_piece])
+        song_files_indexes = np.char.startswith(np.array(files_in_songbook), name)
+        song_files = np.array(files_in_songbook)[song_files_indexes]
+        next_chart = song_files[np.char.endswith(song_files, 'png')]
+        midi_index = 1 - np.logical_or(np.char.endswith(song_files, 'png'), np.char.endswith(song_files, 'ly'))
+        next_midi = song_files[midi_index == 1]
+        next_chart = os.path.join(next_songbook_path, next_chart[0])
+        next_midi = os.path.join(next_songbook_path, next_midi[0])
+        return next_chart, next_midi, name, next_level
+
+    def next_action_by_recommendation(recommendation):
+        if int(recommendation) < 3:
+            return chart_path, original_midi, song_name, song_level
+        else:
+            if int(recommendation) == 4:
+                return next_piece_by_level(song_level)
+            else:
+                if int(recommendation) == 3:
+                    return next_piece_by_level(song_level - 1)
+                else:
+                    return next_piece_by_level(song_level + 1)
 
     def directories(Data_Played):
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
@@ -107,21 +161,22 @@ def midi(chart_path, original_midi, subject_id, song_name):
         tech_grades = performance.get_features()
         print(tech_grades)
 
-        grades = performance.predict_grades(tech_grades)
-        recommendation = performance.predict_reccomendation(tech_grades)
+        # grades = performance.predict_grades(tech_grades)
+        # recommendation = performance.predict_reccomendation(tech_grades)
 
-        # message_to_user = feedback_by_grades_recommendation
-        # add option to choose different assignment
-        # chart path, original_midi, song_name = next_action_by_recommendation
+        recommendation = '5'
+        grades = tech_grades
+        next_chart_path, next_original_midi, next_song_name, next_song_level = \
+            next_action_by_recommendation(recommendation)
 
-        stopping = exit_application(tech_grades, recommendation)
+        stopping = exit_application(grades, recommendation)
         if stopping:
             for widget in window.winfo_children():
                 widget.destroy()
             window.destroy()
         else:
             window.destroy()
-            midi(chart_path, original_midi, subject_id, song_name)
+            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level)
 
     def place_stop_button():
         photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')

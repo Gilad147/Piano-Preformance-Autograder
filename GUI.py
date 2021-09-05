@@ -18,6 +18,7 @@ def play_GUI():
 
     def do_nothing():
         pass
+
     window.protocol('WM_DELETE_WINDOW', do_nothing)
 
     # first stage fields
@@ -51,12 +52,12 @@ def play_GUI():
                 item_name = item
                 item = str(item)
                 if "midi" in item:
-                    encoder_midi[item[:-5]] = root_path+"/project directory/songs/"+folder+"/"+item_name
+                    encoder_midi[item[:-5]] = root_path + "/project directory/songs/" + folder + "/" + item_name
                 else:
                     if "mid" in item:
-                        encoder_midi[item[:-4]] = root_path+"/project directory/songs/"+folder+"/"+item_name
+                        encoder_midi[item[:-4]] = root_path + "/project directory/songs/" + folder + "/" + item_name
                 if "png" in item:
-                    encoder_chart[item[:-4]] = root_path+"/project directory/songs/"+folder+"/"+item_name
+                    encoder_chart[item[:-4]] = root_path + "/project directory/songs/" + folder + "/" + item_name
         return encoder_midi, encoder_chart
 
     # functions for second stage settings
@@ -100,18 +101,26 @@ def play_GUI():
             second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
             songChosen['values'] = arrange_items(second_combo_items)
             songChosen.set("")
+
         ok1 = ttk.Button(window, text="ok", command=check_combo)
         ok1.place(x=320, y=30)
 
+        def find_level_by_songbook(songbook):
+            levels_by_dictionary = {'initial exercises': 0, 'initial exercises2': 1, 'initial exercises3': 2,
+                                    'hebrew Collection': 4}
+            return levels_by_dictionary[songbook]
+
         def confirm():
             chosen_song = songChosen.get()
+            song_level = find_level_by_songbook(typeChosen.get())
             directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
             original_midi = directory_encoder_midi[chosen_song]
             chart_path = directory_encoder_chart[chosen_song]
             if songChosen.get() != "":
                 messagebox.showinfo('Attention', 'The trial will now begin')
             window.destroy()
-            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song)
+            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level)
+
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)
 
