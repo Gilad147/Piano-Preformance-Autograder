@@ -8,7 +8,7 @@ from tkinter import ttk
 
 
 def play_GUI():
-    # Initialize GUI window
+    """Main function the initialize GUI with all attributes"""
     window = Tk()
     window.title("First Stage")
     window.geometry("365x215+10+10")
@@ -33,7 +33,11 @@ def play_GUI():
     save_user_id_arr = []
 
     def pathto_dict(path):
-        # scans directory to create a nested list of files
+        """Scans directory to create a nested list of files
+            path: an absolute path of the project directory
+            :returns:
+                    dir = nested list of all directory files
+        """
         dir = {}
         path = path.rstrip(os.sep)
         start = path.rfind(os.sep) + 1
@@ -45,7 +49,12 @@ def play_GUI():
         return dir
 
     def create_encoders(directory_tree):
-        # takes directory and creates encoders from a song name to it's respected files
+        """Creates encoders from song name to its absolute midi/chart path
+            directory_tree: the nested folders of project files
+            :returns:
+                     encoder_midi = dictionary from song name to midi path
+                     encoder_chart = dictionary from song name to chart path
+        """
         encoder_midi = {}
         encoder_chart = {}
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))

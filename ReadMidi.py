@@ -19,15 +19,26 @@ import bisect
 
 
 def midi(chart_path, original_midi, subject_id, song_name, song_level):
-    # initializer for midi trial
+    """Initialize midi trial with given arguments
+        chart_path: an absolute path of the chart that is given to student
+        original_midi: an absolute path of original midi track of chosen song
+        subject_id: a 9 digits israeli ID
+        song_name: the name of the song without file suffix
+        song_level: the level of the songbook the song is taken from
+    """
     Raw_Input = np.zeros((1, 4))
 
     def input_design(Raw_Input):
-        # design midi input into desired table of midi events
+        """Creates the desired design of the midi events table
+            Raw_Input:
+            :returns: the midi events table - each event = [start, end, pitch, velocity]
+        """
         New_Input = np.zeros((1, 4))
         i = 1
         for row in range(len(Raw_Input)):
             if Raw_Input[row][1] == 144:
+                # a key stroke consists of the 144 sign
+                # a key being released consists of the 128 sign
                 New_Input = np.append(New_Input.tolist(), [Raw_Input[row]], axis=0)
                 Found_next = False
                 indexer = row
@@ -57,7 +68,10 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         return grades[i]
 
     def exit_application(grades, recommendation):
-        # processing end of trial - feedback, grades & next-step
+        """Handle end of trial and next step determination and set up
+            grades: vector of size 4 with the predicted grades from ML processing
+            recommendation: a string digit stating the predicted recommendation from ML processing
+        """
         overall_feedback = determine_overall_feedback(np.average(np.array(grades)))
         pitching_feedback = determine_grade_feedback(grades[3])
         tempo_feedback = determine_grade_feedback(grades[4])
@@ -93,9 +107,17 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             return file_name[:-5]
 
     def next_piece_by_level(level):
-        # randomly drawing a song by level
+        """Randomly draw a piece by the level given
+            level: string digit stating the desired songbook level
+            :returns:
+                    next_chart = the absolute path for the next chart
+                    next_midi  = the absolute path for the next midi
+                    name = the name of the chosen song without suffix
+                    next_level = the level of the chosen song
+
         # ATTENTION: treats each song as having .mid, .png, .ly files
         # Change is necessary to prevent bugging if other files are present
+        """
         next_level = level
         if level <= 0:
             next_level = 0
@@ -135,7 +157,11 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                     return next_piece_by_level(song_level + 1)
 
     def directories(Data_Played):
-        # save students trial into personal directory
+        """Saves data played into personal student directory
+            Data_Played: the midi events table designed as desired
+            :returns:
+                    midi_path_to_save = absolute path of personal student directory to save midi file played
+        """
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
         date_directory = datetime.date(datetime.now())
         complete_date_directory = os.path.join(root_path, str(date_directory))
