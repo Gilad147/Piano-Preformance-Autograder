@@ -33,6 +33,7 @@ def play_GUI():
     save_user_id_arr = []
 
     def pathto_dict(path):
+        # scans directory to create a nested list of files
         dir = {}
         path = path.rstrip(os.sep)
         start = path.rfind(os.sep) + 1
@@ -44,6 +45,7 @@ def play_GUI():
         return dir
 
     def create_encoders(directory_tree):
+        # takes directory and creates encoders from a song name to it's respected files
         encoder_midi = {}
         encoder_chart = {}
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
@@ -86,9 +88,9 @@ def play_GUI():
         typeChosen.current(1)
 
         def arrange_items(items):
+            # deletes midi files suffix for cleaner user interaction
             arranged = []
             for item in items:
-                item_name = item
                 item = str(item)
                 if "midi" in item:
                     arranged.append([item[:-5]])
@@ -98,19 +100,23 @@ def play_GUI():
             return arranged
 
         def check_combo():
+            # parsing dropdown choice
             second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
             songChosen['values'] = arrange_items(second_combo_items)
             songChosen.set("")
 
+        # first dropdown
         ok1 = ttk.Button(window, text="ok", command=check_combo)
         ok1.place(x=320, y=30)
 
         def find_level_by_songbook(songbook):
+            # translating songbook into numeric level
             levels_by_dictionary = {'initial exercises': 0, 'initial exercises2': 1, 'initial exercises3': 2,
                                     'hebrew Collection': 4}
             return levels_by_dictionary[songbook]
 
         def confirm():
+            # parsing chosen song and starting midi trial
             chosen_song = songChosen.get()
             song_level = find_level_by_songbook(typeChosen.get())
             directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
@@ -130,18 +136,20 @@ def play_GUI():
         second_stage_labels()
 
     def is_id(sub_id):
+        # checking the id is valid
         for let in sub_id:
             if ord(let) < 48 or ord(let) > 57:
                 return False
         return True
 
-    # transition from 1st to 2nd stage
     def clicked():
+        # transition button from 1st to 2nd stage
         sub_id = str(subject_ID.get())
         if len(sub_id) == 9 and is_id(sub_id):
             user_id = subject_ID.get()
             save_user_id_arr.append(user_id)
-            messagebox.showinfo('Thank you for your cooperation', 'You are transferred to the trial window \nGood luck')
+            messagebox.showinfo('Thank you for your cooperation',
+                                'You are transferred to the trial window \n Good luck')
             second_stage()
         else:
             messagebox.showinfo('ID Error', 'Enter your correct 9 Digit ID')

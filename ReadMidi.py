@@ -18,14 +18,12 @@ from datetime import datetime
 import bisect
 
 
-# Helper Functions
 def midi(chart_path, original_midi, subject_id, song_name, song_level):
-    print("song name: " + song_name, " song level: " + str(song_level))
-    print(chart_path)
-    print(original_midi)
+    # initializer for midi trial
     Raw_Input = np.zeros((1, 4))
 
     def input_design(Raw_Input):
+        # design midi input into desired table of midi events
         New_Input = np.zeros((1, 4))
         i = 1
         for row in range(len(Raw_Input)):
@@ -43,6 +41,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                         i += 1
         return New_Input[1:].astype(float)
 
+    # functions for numeric grades to written feedback
     def determine_grade_feedback(scores, breakpoints=[0.3, 0.5, 0.7, 0.8, 0.9],
                                  grades=['bad', 'ok', 'good', 'great', 'excellent', 'amazing']):
         i = bisect.bisect(breakpoints, scores)
@@ -58,6 +57,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         return grades[i]
 
     def exit_application(grades, recommendation):
+        # processing end of trial - feedback, grades & next-step
         overall_feedback = determine_overall_feedback(np.average(np.array(grades)))
         pitching_feedback = determine_grade_feedback(grades[3])
         tempo_feedback = determine_grade_feedback(grades[4])
@@ -75,7 +75,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
                                         'I advice you to '
                                         + recommendation_dictionary[recommendation] + '\n'
-                                        'do you want to keep training?',
+                                                                                      'do you want to keep training?',
                                         icon='warning')
         keyboard.close()
         pygame.midi.quit()
@@ -84,6 +84,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             return True
 
     def reformat_file_by_type(file_name):
+        # getting rid of file suffix
         if 'ly' in file_name:
             return file_name[:-3]
         if 'png' in file_name:
@@ -92,6 +93,9 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             return file_name[:-5]
 
     def next_piece_by_level(level):
+        # randomly drawing a song by level
+        # ATTENTION: treats each song as having .mid, .png, .ly files
+        # Change is necessary to prevent bugging if other files are present
         next_level = level
         if level <= 0:
             next_level = 0
@@ -99,7 +103,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             next_level = 3
         directories_by_levels = {0: 'initial exercises', 1: 'initial exercises2', 2: 'initial exercises3',
                                  3: 'hebrew Collection'}
-        root_path = os.path.dirname(os.path.abspath('project directory/songs' + '/' + directories_by_levels[next_level]))
+        root_path = os.path.dirname(
+            os.path.abspath('project directory/songs' + '/' + directories_by_levels[next_level]))
         next_songbook_path = os.path.join(root_path, directories_by_levels[next_level])
         files_in_songbook = os.listdir(next_songbook_path)
         chosen_piece = np.random.randint(0, len(files_in_songbook) / 3)
@@ -117,6 +122,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         return next_chart, next_midi, name, next_level
 
     def next_action_by_recommendation(recommendation):
+        # interprets predicted recommendation for student into the next trial settings
         if int(recommendation) < 3:
             return chart_path, original_midi, song_name, song_level
         else:
@@ -129,6 +135,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                     return next_piece_by_level(song_level + 1)
 
     def directories(Data_Played):
+        # save students trial into personal directory
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto")) + "/Students recordings"
         date_directory = datetime.date(datetime.now())
         complete_date_directory = os.path.join(root_path, str(date_directory))
@@ -151,6 +158,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         return midi_path_to_save
 
     def stop():
+        # process stopping button instance
         Data_Played = input_design(Raw_Input[1:].astype('float32'))
         Data_Played[:, 0] = Data_Played[:, 0] / 1000
         Data_Played[:, 1] = Data_Played[:, 1] / 1000
@@ -178,6 +186,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             window.destroy()
             midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level)
 
+    # functions for midi trial attributes
     def place_stop_button():
         photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
         photo2 = photo2.subsample(5, 5)
@@ -233,6 +242,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
     print("starting")
     going = True
     Started = False
+
+    # reads midi events until stopped
     try:
         notes_dict = {}
         while going:
