@@ -56,15 +56,16 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
         for i in range(len(teachers_scores[0])):  # for every teacher --> i
             if j in train_tuple:
                 labeled_data_train_one_dimension.append([all_performances_grades[j][0],  # Rhythm tech score
-                                           all_performances_grades[j][1],  # Dynamics tech score
-                                           all_performances_grades[j][2],  # Articulation tech score
-                                           all_performances_grades[j][3],  # Pitch tech score
-                                           all_performances_grades[j][4],  # Tempo tech score
-                                           teachers_scores[j][i][0],  # i Teacher's Pitch score
-                                           teachers_scores[j][i][1],  # i Teacher's Rhythm score
-                                           teachers_scores[j][i][2],  # i Teacher's Tempo score
-                                           teachers_scores[j][i][3],  # i Teacher's Articulation & Dynamics score
-                                           teachers_next_step[j][i]])  # i Teacher's next step
+                                                         all_performances_grades[j][1],  # Dynamics tech score
+                                                         all_performances_grades[j][2],  # Articulation tech score
+                                                         all_performances_grades[j][3],  # Pitch tech score
+                                                         all_performances_grades[j][4],  # Tempo tech score
+                                                         teachers_scores[j][i][0],  # i Teacher's Pitch score
+                                                         teachers_scores[j][i][1],  # i Teacher's Rhythm score
+                                                         teachers_scores[j][i][2],  # i Teacher's Tempo score
+                                                         teachers_scores[j][i][3],
+                                                         # i Teacher's Articulation & Dynamics score
+                                                         teachers_next_step[j][i]])  # i Teacher's next step
 
                 labeled_data_train_two_dimensions.append(labeled_data_train_one_dimension[-1].copy())
                 dim1, dim2 = label_mapping[labeled_data_train_two_dimensions[-1][9]][0], \
@@ -75,22 +76,24 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
 
             else:
                 labeled_data_test.append([all_performances_grades[j][0],  # Rhythm tech score
-                                           all_performances_grades[j][1],  # Dynamics tech score
-                                           all_performances_grades[j][2],  # Articulation tech score
-                                           all_performances_grades[j][3],  # Pitch tech score
-                                           all_performances_grades[j][4],  # Tempo tech score
-                                           teachers_scores[j][i][0],  # i Teacher's Pitch score
-                                           teachers_scores[j][i][1],  # i Teacher's Rhythm score
-                                           teachers_scores[j][i][2],  # i Teacher's Tempo score
-                                           teachers_scores[j][i][3],  # i Teacher's Articulation & Dynamics score
-                                           teachers_next_step[j][i]])  # i Teacher's next step
+                                          all_performances_grades[j][1],  # Dynamics tech score
+                                          all_performances_grades[j][2],  # Articulation tech score
+                                          all_performances_grades[j][3],  # Pitch tech score
+                                          all_performances_grades[j][4],  # Tempo tech score
+                                          teachers_scores[j][i][0],  # i Teacher's Pitch score
+                                          teachers_scores[j][i][1],  # i Teacher's Rhythm score
+                                          teachers_scores[j][i][2],  # i Teacher's Tempo score
+                                          teachers_scores[j][i][3],  # i Teacher's Articulation & Dynamics score
+                                          teachers_next_step[j][i]])  # i Teacher's next step
 
-    train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
-                                                      "Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                      "Teacher's Articulation & Dynamics", 'label'])
-    train_two_dimensions = pd.DataFrame(labeled_data_train_two_dimensions, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
-                                                      "Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                      "Teacher's Articulation & Dynamics", 'label dim 1', 'label dim 2'])
+    train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
+                                       columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
+                                                "Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
+                                                "Teacher's Articulation & Dynamics", 'label'])
+    train_two_dimensions = pd.DataFrame(labeled_data_train_two_dimensions,
+                                        columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
+                                                 "Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
+                                                 "Teacher's Articulation & Dynamics", 'label dim 1', 'label dim 2'])
     test = pd.DataFrame(labeled_data_test, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
                                                     "Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
                                                     "Teacher's Articulation & Dynamics", 'label'])
@@ -109,7 +112,7 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
         auxiliary.test_algorithms_scores(train_one_dimension, test, "Rhythm", to_print=True)
         auxiliary.test_algorithms_scores(train_one_dimension, test, "Articulation & Dynamics", to_print=True)
 
-    return train_one_dimension
+    return train_one_dimension, train_two_dimensions
 
 
 def fake_teachers_feedback(performances, number):
@@ -140,15 +143,16 @@ def fake_teachers_feedback(performances, number):
 
         for j in range(len(performances)):
             next_step[j].append(teacher_i.give_next_step_recco_stumps(rhythm_score=performances[j][0],
-                                                    dynamics_score=performances[j][1],
-                                                    articulation_score=performances[j][2],
-                                                    pitch_score=performances[j][3],
-                                                    tempo_score=performances[j][4]))
+                                                                      dynamics_score=performances[j][1],
+                                                                      articulation_score=performances[j][2],
+                                                                      pitch_score=performances[j][3],
+                                                                      tempo_score=performances[j][4]))
 
             performance_grades = [teacher_i.give_scores(performances[j][3], "Pitch"),
                                   teacher_i.give_scores(performances[j][0], "Rhythm"),
                                   teacher_i.give_scores(performances[j][4], "Tempo"),
-                                  teacher_i.give_scores([performances[j][2], performances[j][1]], "Articulation & Dynamics")]
+                                  teacher_i.give_scores([performances[j][2], performances[j][1]],
+                                                        "Articulation & Dynamics")]
             scores[j].append(performance_grades)
 
     return scores, next_step
@@ -190,11 +194,11 @@ class Teacher:
         articulation_score += self.articulation_unique_stumps
         dynamics_score += self.dynamics_unique_stumps
 
-        if pitch_score < 0.3:
+        if pitch_score < 0.5:
             return "3"
-        if 0.3 <= pitch_score < 0.5:
-            return "0"
         if 0.5 <= pitch_score < 0.75:
+            return "0"
+        if 0.75 <= pitch_score < 0.9:
             if 0 < tempo_score < 0.5:
                 return "0"
             if -0.5 < tempo_score < 0:
@@ -233,7 +237,7 @@ class Teacher:
         elif feature_name == "Articulation & Dynamics":
             feature_score[0] += self.articulation_unique_score
             feature_score[1] += self.dynamics_unique_score
-            feature_score = sum(feature_score)/2
+            feature_score = sum(feature_score) / 2
 
         if feature_score < 0.2:
             return "0"
@@ -245,6 +249,3 @@ class Teacher:
             return "3"
         else:
             return "4"
-
-
-

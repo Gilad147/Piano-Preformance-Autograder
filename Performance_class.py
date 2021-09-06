@@ -1,3 +1,5 @@
+import pickle
+
 import pretty_midi
 import pandas as pd
 import libfmp.c1
@@ -5,6 +7,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from difflib import SequenceMatcher
 import sklearn as skl
+
+next_step_model_path = 'finalized_next_step_model.pkl'
+pitch_model_path = 'pitch_model.pkl'
+rhythm_model_path = 'rhythm_model.pkl'
+a_d_model_path = 'a_d_model.pkl'
+tempo_model_path = 'tempo_model.pkl'
 
 
 class Performance:
@@ -47,11 +55,18 @@ class Performance:
                                      columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
         self.original = np.sort(self.original, 0)
 
-    def predict_grades(self, technical_grades):
-        return None
+    def predict_reccomendation(self, technical_grades, path=next_step_model_path):
+        with open(path, 'rb') as file:
+            model = pickle.load(file)
+        return model.predict(technical_grades)
 
-    def predict_reccomendation(self, technical_grades):
-        return None
+    def predict_grades(self, technical_grades):
+        pitch_feature = self.predict_reccomendation(technical_grades, pitch_model_path)
+        rhythm_feature = self.predict_reccomendation(technical_grades, rhythm_model_path)
+        a_d_feature = self.predict_reccomendation(technical_grades, a_d_model_path)
+        tempo_feature = self.predict_reccomendation(technical_grades, tempo_model_path)
+
+        return rhythm_feature, a_d_feature, pitch_feature, tempo_feature
 
     def get_features(self):
         try:
