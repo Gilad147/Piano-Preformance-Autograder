@@ -4,7 +4,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from auxiliary import test_algorithms
+from auxiliary import test_algorithms_one_dimension, test_algorithms_two_dimensions
 import Performance_class
 import shutil
 from pathlib import Path
@@ -45,15 +45,15 @@ def teacherGrades(teacher_grades_df: pd.Series):
     for song in SurveyPerformanceList:
 
         performance_grades = {"name": song["name"], "player_name": song["player_name"],
-                              "pitch": int(teacher_grades_array[i]), "tempo": int(teacher_grades_array[i + 1]),
-                              "rhythm": int(teacher_grades_array[i + 2]), "a_d": int(teacher_grades_array[i + 3]),
-                              "overall": int(teacher_grades_array[i + 4])}
-        next_step = int(teacher_grades_array[i + 5])
+                              "pitch": str(teacher_grades_array[i]), "tempo": str(teacher_grades_array[i + 1]),
+                              "rhythm": str(teacher_grades_array[i + 2]), "a_d": str(teacher_grades_array[i + 3]),
+                              "overall": str(teacher_grades_array[i + 4])}
+        next_step = str(teacher_grades_array[i + 5])
         if next_step == 1:
 
-            performance_grades["next_step"] = int(teacher_grades_array[i + 6]) - 1
+            performance_grades["next_step"] = str(teacher_grades_array[i + 6] - 1)
         else:
-            performance_grades["next_step"] = int(teacher_grades_array[i + 7]) + 2
+            performance_grades["next_step"] = str(teacher_grades_array[i + 7] + 2)
         teacher_grades.append(performance_grades)
         i += 8
     return teacher_grades
@@ -114,10 +114,10 @@ def getDataForSL(csv_path, number_of_teachers, folder_path):
 
 
 def trainAndTest(csv_path, number_of_teachers, folder_path, train_ratio, random_teachers=True, features=False,
-                 fake_teachers=0, fake_songs=0):
+                 fake_teachers=0, fake_songs=0, dimension):
     all_performances_predications, features_predications, performances = getDataForSL(csv_path, number_of_teachers,
                                                                                       folder_path)
-    labeled_data_train = []  # explain that in order to prevent data leakeage (group leakage), we split *teachers* randomly into train-test
+    labeled_data_train = []  # explain that in order to prevent data leakeage (group leakage), we split *performances* randomly into train-test
     labeled_data_test = []
     numOfPerformances = len(all_performances_predications)
     numOfSongs = int(numOfPerformances / number_of_teachers)
@@ -152,6 +152,13 @@ def trainAndTest(csv_path, number_of_teachers, folder_path, train_ratio, random_
                                            all_performances_predications[i][3],
                                            all_performances_predications[i][4],
                                            all_performances_predications[i][5]])
+                if dimension == 2:
+                    label_mapping = {"0": ["0", "-1"], "3": ["1", "-1"], "1": ["0", "0"], "2": ["0", "1"], "4":["1", "0"],
+                               "5": ["1", "1"]}
+                    dim1, dim2 = label_mapping[labeled_data_train[-1][5]][0], label_mapping[labeled_data_train[-1][5]][1]
+                    labeled_data_train[-1][5] = dim1
+                    labeled_data_train[-1].append(dim2)
+
             else:
                 labeled_data_test.append([all_performances_predications[i][0],
                                           all_performances_predications[i][1],
@@ -160,19 +167,36 @@ def trainAndTest(csv_path, number_of_teachers, folder_path, train_ratio, random_
                                           all_performances_predications[i][4],
                                           all_performances_predications[i][5]])
 
-    train = pd.DataFrame(labeled_data_train, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo', 'label'])
-    test = pd.DataFrame(labeled_data_test, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo', 'label'])
+    if dimension == 1:
+        train = pd.DataFrame(labeled_data_train, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo', 'label'])
+        test = pd.DataFrame(labeled_data_test, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo', 'label'])
+        if fake_teachers:
+            generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', fake_songs, False)
+            generated_data = performances + generated_data
+            fake_train = Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data,
+                                                                   number_of_teachers=fake_teachers,
+                                                                   train_ratio=1, is_testing=False)
+            train = pd.concat(objs=[train, fake_train])
+            train = train.astype("float32")
+        # test_algorithms(train, test, False)
+        return test_algorithms_one_dimension(train, test, True, to_print=False)
 
-    if fake_teachers:
-        generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', fake_songs, False)
-        generated_data = performances + generated_data
-        fake_train = Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data,
-                                                               number_of_teachers=fake_teachers,
-                                                               train_ratio=1, is_testing=False)
-        train = pd.concat(objs=[train, fake_train])
-        train = train.astype("float32")
-    # test_algorithms(train, test, False)
-    return test_algorithms(train, test, True, to_print=False)
+    else:
+        train = pd.DataFrame(labeled_data_train, columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
+                                                              'label dim 1', 'label dim 2'])
+        test = pd.DataFrame(labeled_data_test,
+                                 columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo', 'label'])
+
+        if fake_teachers:
+            generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', fake_songs, False)
+            generated_data = performances + generated_data
+            fake_train = Automated_teacher.fake_teachers_algorithm(False, performances_data=generated_data,
+                                                                   number_of_teachers=fake_teachers,
+                                                                   train_ratio=1, is_testing=False)
+            train = pd.concat(objs=[train, fake_train])
+            train = train.astype("float32")
+        # test_algorithms(train, test, False)
+        return test_algorithms_two_dimensions(train, test, True, to_print=False)
 
 
 def data_by_size_graph(csv_path, max_number_of_teachers, folder_path, train_ratio, random_teachers=True):
@@ -224,3 +248,4 @@ def fake_data_graph(csv_path, number_of_teachers, folder_path, train_ratio, fake
 if __name__ == "__main__":
     fake_data_graph("Music+evaluation_August+30,+2021_03.17.csv", 7, "songs", train_ratio=0.7, random_teachers=True,
                     fake_teachers_max=5, fake_songs_max=3)
+
