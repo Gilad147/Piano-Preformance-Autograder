@@ -31,85 +31,78 @@ SurveyPerformanceList = [{"name": "HaKova Sheli", "player_name": "Student 12"},
                          {"name": "Lifnei Shanim Rabot", "player_name": "Student 17"},
                          {"name": "Yom Huledet Sameach", "player_name": "Student 25"},
                          {"name": "HaKova Sheli", "player_name": "Student 13"}]
-maxNumberOfTeachers = 6
+maxNumberOfTeachers = 10
 
 
 def teacherGrades(teacher_grades_df: pd.Series):
     teacher_grades_array = teacher_grades_df.array
-    teacher_grades = []
-    i = 19
-    for song in SurveyPerformanceList:
-        performance_grades = {"name": song["name"], "player_name": song["player_name"],
-                              "pitch": int(teacher_grades_array[i]), "tempo": int(teacher_grades_array[i + 1]),
-                              "rhythm": int(teacher_grades_array[i + 2]), "a_d": int(teacher_grades_array[i + 3]),
-                              "overall": int(teacher_grades_array[i + 4])}
-        next_step = int(teacher_grades_array[i + 5])
-        if next_step == 1:
-            performance_grades["next_step"] = int(teacher_grades_array[i + 6]) - 1
-        else:
-            performance_grades["next_step"] = int(teacher_grades_array[i + 7]) + 2
-        teacher_grades.append(performance_grades)
-        i += 8
+    teacher_grades = {"Pitch": 5 - int(teacher_grades_array[0]), "Tempo": 5 - int(teacher_grades_array[1]),
+                      "Rhythm": 5 - int(teacher_grades_array[2]),
+                      "A_D": 5 - int(teacher_grades_array[3]),
+                      "Overall": int(teacher_grades_array[4])}
+    next_step = int(teacher_grades_array[5])
+    if next_step == 1:
+        teacher_grades["Next Step"] = int(teacher_grades_array[6]) - 1
+    else:
+        teacher_grades["Next Step"] = int(teacher_grades_array[7]) + 2
     return teacher_grades
 
 
-def processSurveyResults(path, n):
-    results_df = pd.read_csv(path, dtype={
-        'string_col': 'float16',
-        'int_col': 'float16'
-    }).fillna(-1)
-    results = []
-    for i in range(0, n):
-        teacher_df = results_df.iloc[i, :]
-        results.append(teacherGrades(teacher_df))
-    return results
+def get_performance_grades(performance_grades_df: pd.DataFrame, number_of_teachers):
+    grades = []
+    for i in range(0, number_of_teachers):
+        teacher_df = performance_grades_df.iloc[i, :]
+        grades.append(teacherGrades(teacher_df))
+    grades_df = pd.DataFrame(grades)
+
+    return grades_df
 
 
-def getFeatures(path, name, player_name):
+def getPerformance(path, name, player_name):
     performance = None
-    rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = -1, 0, 0, 0, 0
     original_path = path + "/" + "original songs/" + name + ".midi"
     try:
         performance_path = path + "/real data/" + name + "/" + player_name + ".mid"
         performance = Performance_class.Performance(
             path=performance_path, name=name, player_name=player_name, original_path=original_path)
-        rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = performance.get_features()
 
     except:
         performance_path = path + "/real data/" + name + "/" + player_name + ".midi"
         performance = Performance_class.Performance(
             path=performance_path, name=name, player_name=player_name, original_path=original_path)
-        rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = performance.get_features()
 
 
     finally:
-        return performance, rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
+        return performance
+
+
+def processSurveyResults(csv_path, folder_path, n=maxNumberOfTeachers):
+    results_df = pd.read_csv(csv_path, dtype={
+        'string_col': 'float16',
+        'int_col': 'float16'
+    }).fillna(-1)
+    song_dict = {}
+    i = 19
+    for performance in SurveyPerformanceList:
+        performance_class = getPerformance(folder_path, performance["name"], performance["player_name"])
+        if performance_class is None:
+            continue
+        performance_grades_df = results_df.iloc[:, i:i + 8]
+        grades_df = get_performance_grades(performance_grades_df, n)
+        performance_class.teachers_grades = grades_df.to_numpy()
+        performance_class.give_labels(majority_or_avg=True)
+        # create/update song object
+        i += 8
+    return song_dict
 
 
 def getDataForSL(csv_path, number_of_teachers, folder_path):
-    all_performances_predications = []
-    performances = []
-    features = []
-    results = processSurveyResults(csv_path, number_of_teachers)
-    for song in SurveyPerformanceList:
-        performance, rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = \
-            getFeatures(folder_path, song["name"], song["player_name"])
-        performances.append(performance)
-        scores = {"Rhythm": rhythm_feature, 'Dynamics': velocity_feature, 'Articulation': duration_feature,
-                  'Pitch': pitch_feature, 'Tempo': tempo_feature}
-        features.append(scores)
+    song_dict = processSurveyResults(csv_path, number_of_teachers, folder_path)
+    songs_labels = []
+    for songs in song_dict:
+        songs_labels.append()
 
-    for teacher in results:
-        for i, grades in enumerate(teacher):
-            if grades["rhythm"] != -1 and grades["a_d"] != -1 and grades["pitch"] != -1 and grades["tempo"] != -1 and \
-                    grades["next_step"] != -1:
-                all_performances_predications.append(
-                    [features[i]["Rhythm"], features[i]['Dynamics'], features[i]['Articulation'],
-                     features[i]['Pitch'],
-                     features[i]['Tempo'], grades["rhythm"], grades["a_d"], grades["pitch"], grades["tempo"],
-                     grades["next_step"]])
-
-    return all_performances_predications, performances
+    return songs_labels
 
 
 def trainAndTest(csv_path, folder_path, train_ratio,
@@ -203,13 +196,13 @@ def plot_data_by_real_teachers(csv_path, folder_path, train_ratio, number_of_tea
         x.append(i)
         print("number of teachers: " + str(i) + " scoring done")
 
-    x_label = "Number of Teachers"
-    print_graph(one_dim, "One dimension Next step", x, xlabel="Number of Teachers")
-    print_graph(two_dim, "Two dimensions Next step", x, xlabel="Number of Teachers")
-    print_graph(pitch, "Pitch feature", x, xlabel="Number of Teachers")
-    print_graph(tempo, "Tempo feature", x, xlabel="Number of Teachers")
-    print_graph(rhythm, "Rhythm feature", x, xlabel="Number of Teachers")
-    print_graph(a_d, "Articulation and Dynamics feature", x, xlabel="Number of Teachers")
+    xlabel = "Number of Teachers"
+    print_graph(one_dim, "One dimension Next step", x, xlabel=xlabel)
+    print_graph(two_dim, "Two dimensions Next step", x, xlabel=xlabel)
+    print_graph(pitch, "Pitch feature", x, xlabel=xlabel)
+    print_graph(tempo, "Tempo feature", x, xlabel=xlabel)
+    print_graph(rhythm, "Rhythm feature", x, xlabel=xlabel)
+    print_graph(a_d, "Articulation and Dynamics feature", x, xlabel=xlabel)
 
 
 def plot_fake_data(csv_path, folder_path, train_ratio, fake_songs_max, fake_teachers_max, fake_songs_min=0):
@@ -265,5 +258,4 @@ def choose_model(model, filename='finalized_next_step_model.pkl'):
 
 
 if __name__ == "__main__":
-    plot_fake_data("Music+evaluation_August+30,+2021_03.17.csv", "songs", train_ratio=0.5, fake_songs_min=3,
-                   fake_songs_max=4, fake_teachers_max=10)
+    processSurveyResults("Music+evaluation_September+6,+2021_03.10.csv", "songs")
