@@ -132,7 +132,10 @@ def play_GUI():
             original_midi = directory_encoder_midi[chosen_song]
             chart_path = directory_encoder_chart[chosen_song]
             if songChosen.get() != "":
-                messagebox.showinfo('Attention', 'The trial will now begin')
+                messagebox.showinfo("Attention",
+                                    "For you convenience, 2 buttons are available for use"
+                                    "\nRecord - Start and Reset recording "
+                                    "\nStop - End your trial and save recording")
             window.destroy()
             midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level)
 

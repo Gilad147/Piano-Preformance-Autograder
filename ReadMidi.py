@@ -1,6 +1,8 @@
 import itertools
 import math
 import os
+from datetime import datetime
+import bisect
 import pyaudio
 import pygame
 import pygame.midi
@@ -14,8 +16,6 @@ from pygame.midi import midi_to_frequency
 from Performance_class import Performance
 from auxiliary import np2mid
 import pretty_midi
-from datetime import datetime
-import bisect
 
 
 def midi(chart_path, original_midi, subject_id, song_name, song_level):
@@ -53,8 +53,28 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         return New_Input[1:].astype(float)
 
     # functions for numeric grades to written feedback
-    def determine_grade_feedback(scores, breakpoints=[0.3, 0.5, 0.7, 0.8, 0.9],
-                                 grades=['bad', 'ok', 'good', 'great', 'excellent', 'amazing']):
+    def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.8],
+                                 grades=['you do not pay enough attention to rhythm',
+                                         'try to pay more attention to rhythmic transitions',
+                                         'great sense of rhythm, keep up']):
+        i = bisect.bisect(breakpoints, scores)
+        return grades[i]
+    def determine_pitch_feedback(scores, breakpoints=[0.4, 0.8],
+                                 grades=['you have a lot of missing or wrong notes',
+                                         'try to be more accurate with note sequences',
+                                         'great melody, keep up']):
+        i = bisect.bisect(breakpoints, scores)
+        return grades[i]
+    def determine_tempo_feedback(scores, breakpoints=[0.4, 0.8],
+                                 grades=['your feel of tempo is not consistent',
+                                         'try to play with a better feel the tempo',
+                                         'very steady playing, keep up']):
+        i = bisect.bisect(breakpoints, scores)
+        return grades[i]
+    def determine_velocity_feedback(scores, breakpoints=[0.4, 0.8],
+                                 grades=['you are not sensitive enough to notes volume',
+                                         'try to be more sensitive to the dynamics',
+                                         'good expressive ability, keep up']):
         i = bisect.bisect(breakpoints, scores)
         return grades[i]
 
@@ -73,19 +93,19 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
             recommendation: a string digit stating the predicted recommendation from ML processing
         """
         overall_feedback = determine_overall_feedback(np.average(np.array(grades)))
-        pitching_feedback = determine_grade_feedback(grades[3])
-        tempo_feedback = determine_grade_feedback(grades[4])
-        rhythm_feedback = determine_grade_feedback(grades[0])
-        velocity_feedback = determine_grade_feedback(grades[1])
+        pitching_feedback = determine_pitch_feedback(grades[3])
+        tempo_feedback = determine_tempo_feedback(grades[4])
+        rhythm_feedback = determine_rhythm_feedback(grades[0])
+        velocity_feedback = determine_velocity_feedback(grades[1])
         recommendation_dictionary = {'0': 'play slower', '1': 'play it again', '2': 'play faster',
-                                     '3': 'play this easier piece', '4': 'play another piece',
-                                     '5': 'play this harder piece'}
+                                     '3': 'play a easier piece', '4': 'play another piece',
+                                     '5': 'play a harder piece'}
         feedback_message = overall_feedback + '\n' \
-                           + ' please pay attention to this technicals: ' + '\n' + '\n' \
-                           + 'your pitching is ' + pitching_feedback + '\n' \
-                           + 'tempo is ' + tempo_feedback + '\n' \
-                           + 'rhythm is ' + rhythm_feedback + '\n' \
-                           + 'and articulation ' + velocity_feedback + '\n'
+                           + 'Please pay attention to this technicals: ' + '\n' + '\n' \
+                           + 'Pitch: ' + pitching_feedback + '\n' + '\n' \
+                           + 'Tempo: ' + tempo_feedback + '\n' + '\n' \
+                           + 'Rhythm: ' + rhythm_feedback + '\n' + '\n' \
+                           + 'Articulation: ' + velocity_feedback + '\n' + '\n'
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
                                         'I advice you to '
                                         + recommendation_dictionary[recommendation] + '\n'
@@ -200,8 +220,6 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
 
         recommendation = '5'
         grades = tech_grades
-        next_chart_path, next_original_midi, next_song_name, next_song_level = \
-            next_action_by_recommendation(recommendation)
 
         stopping = exit_application(grades, recommendation)
         if stopping:
@@ -209,22 +227,54 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                 widget.destroy()
             window.destroy()
         else:
+            if int(recommendation) > 3:
+                MsgBox = messagebox.askquestion('Practice continues',
+                                                'Do you want to go on with my recommendation?\n\n '
+                                                '*choosing "no" means playing the same piece again', icon='warning')
+                if MsgBox == 'yes':
+                    next_chart_path, next_original_midi, next_song_name, next_song_level = \
+                        next_action_by_recommendation(recommendation)
             window.destroy()
+            next_chart_path = chart_path
+            next_original_midi = original_midi
+            next_song_name = song_name
+            next_song_level = song_level
             midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level)
+
+    def record(data):
+        if data.shape[0] > 1:
+            data[1] = [0, 0, 0, 0]
 
     # functions for midi trial attributes
     def place_stop_button():
-        photo2 = PhotoImage(file='/Users/orpeleg/Desktop/stop.png')
-        photo2 = photo2.subsample(5, 5)
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
+        path = 'Images for GUI/stop button.png'
+        complete_path = os.path.join(root_path, path)
+        zoom = 0.4
+        pixels_x, pixels_y = tuple([int(zoom * x) for x in Image.open(complete_path).size])
+        photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         stop_button = Button(window, text='Stop', image=photo2, command=stop)
         stop_button.image = photo2
-        stop_button.place(x=0, y=0)
+        stop_button.place(x=0, y=80)
+
+    def place_record_button():
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
+        path = 'Images for GUI/record button.png'
+        complete_path = os.path.join(root_path, path)
+        zoom = 0.4
+        pixels_x, pixels_y = tuple([int(zoom * x) for x in Image.open(complete_path).size])
+        photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
+        record_button = Button(window, text='Record', image=photo2, command=lambda: record(Raw_Input))
+        record_button.image = photo2
+        record_button.place(x=140, y=80)
 
     def place_note_chart(path):
-        img = ImageTk.PhotoImage(Image.open(path))
-        img_label = Label(image=img)
+        zoom = 1.8
+        pixels_x, pixels_y = tuple([int(zoom * x) for x in Image.open(path).size])
+        img = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
+        img_label = Label(window, image=img)
         img_label.image = img
-        img_label.place(x=0, y=60)
+        img_label.place(x=0, y=230)
 
     stream = pyaudio.PyAudio().open(
         rate=44100,
@@ -246,15 +296,16 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
     # GUI - Build Frame
     window = Tk()
     window.title("Trial")
-    window.geometry("850x300+10+10")
+    window.attributes("-fullscreen", True)
     window.resizable(width=FALSE, height=FALSE)
     # window['bg']='#33ABFF'
-    fontStyle = tkFont.Font(family="Calibri", size=17)
-    myLabel1 = Label(window, text="Press the button to stop recording", font=fontStyle)
-    myLabel1.place(x=50, y=0)
+    fontStyle = tkFont.Font(family="Calibri", size=26)
+    myLabel1 = Label(window, text="To start/reset recording press RECORD"
+                                  "\nTo save recording and end trial press STOP", font=fontStyle)
+    myLabel1.place(x=0, y=0)
     place_stop_button()
+    place_record_button()
     place_note_chart(chart_path)
-
     # Initialize MIDI
     pygame.init()
     pygame.midi.init()
@@ -294,6 +345,11 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                             if not Started:
                                 time = midi_events[0][1]
                                 Started = True
+                            else:
+                                if np.all(Raw_Input[1] == [0, 0, 0, 0]):
+                                    print("cleared")
+                                    Raw_Input = np.zeros((1, 4))
+                                    time = midi_events[0][1]
                             edited_midi_event = [midi_events[0][1] - time] + midi_events[0][0][:-1]
                             Raw_Input = np.append(Raw_Input, [edited_midi_event], axis=0)
                             print(midi_events)
