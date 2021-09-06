@@ -45,9 +45,9 @@ class Performance:
         self.original = np.sort(self.original, 0)
 
         self.teachers_grades = []  # [[Teacher's Pitch score, Teacher's Tempo score, Teacher's Rhythm score,
-                                    # Teacher's Articulation & Dynamics score, Teacher's next step]] (similar to the order in qualtrics)
+        # Teacher's Articulation & Dynamics score, Teacher's next step]] (similar to the order in qualtrics)
 
-        self.labels = [] # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
+        self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
 
     def predict_grades(self, technical_grades):
         return None
@@ -115,7 +115,6 @@ class Performance:
                     note[2] = 1 + note[2]
         self.midi_df = new_midi_df
 
-
     def supervised_blocks_diff(self, blocks):
         """
 
@@ -170,13 +169,12 @@ class Performance:
 
         return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
-
-    def give_labels(self, majority_or_avg): # majority_or_avg == true --> majority ; majority_or_avg == false --> avg
+    def give_labels(self, majority_or_avg):  # majority_or_avg == true --> majority ; majority_or_avg == false --> avg
         pitch_scores = [teacher[0] for teacher in self.teachers_grades]
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
-        next_step = [teacher[4] for teacher in self.teachers_grades]
+        next_step = [teacher[5] for teacher in self.teachers_grades]
 
         if majority_or_avg:
             labels = [max(set(pitch_scores), key=pitch_scores.count),
@@ -185,14 +183,10 @@ class Performance:
                       max(set(a_d_scores), key=a_d_scores.count),
                       max(set(next_step), key=next_step.count)]
         else:
-            labels = [round((sum(pitch_scores)/len(pitch_scores))),
-                      round((sum(tempo_scores)/len(tempo_scores))),
-                      round((sum(rhythm_scores)/len(rhythm_scores))),
-                      round((sum(a_d_scores)/len(a_d_scores))),
-                      round((sum(next_step)/len(next_step)))]
+            labels = [round((sum(pitch_scores) / len(pitch_scores))),
+                      round((sum(tempo_scores) / len(tempo_scores))),
+                      round((sum(rhythm_scores) / len(rhythm_scores))),
+                      round((sum(a_d_scores) / len(a_d_scores))),
+                      round((sum(next_step) / len(next_step)))]
 
         self.labels = labels
-
-
-
-

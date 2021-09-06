@@ -247,7 +247,6 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
     y_train = labeled_data_train["Teacher's " + feature_name].to_numpy()
     y_test = labeled_data_test["Teacher's " + feature_name].to_numpy()
 
-
     ### random forest
 
     model_rf_gini = RandomForestClassifier(criterion='gini')
@@ -304,6 +303,4 @@ def model_score(model_1, model_2, x_test, y_test):
         one_dimension_label = label_mapping[label_1][label_2]
         if one_dimension_label == str(y_test[i]):
             cnt += 1
-    return cnt/len(x_test)
-
-
+    return cnt / len(x_test)
