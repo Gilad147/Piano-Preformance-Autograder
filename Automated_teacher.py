@@ -6,7 +6,7 @@ import pandas as pd
 import auxiliary
 
 
-def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ratio, folder=None,
+def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ratio, majority_or_avg, folder=None,
                             performances_data=None, is_testing=True):
     all_performances_grades = []
     if from_midi_files_or_not:
@@ -35,56 +35,45 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
                                             [rhythm_feature, velocity_feature, duration_feature, pitch_feature,
                                              tempo_feature])
     else:
-        for performance in performances_data:
-            rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = performance.get_features()
-            if rhythm_feature != -1:
-                all_performances_grades.append([rhythm_feature, velocity_feature, duration_feature, pitch_feature,
-                                                tempo_feature])
+        labeled_data_train_one_dimension = []  # explain that in order to prevent data leakage (group leakage), we split *performances* randomly into train-test
+        labeled_data_train_two_dimensions = []
+        labeled_data_test = []
 
-    teachers_scores, teachers_next_step = fake_teachers_feedback(all_performances_grades, number=number_of_teachers)
+        train_number = round(len(performances_data) * train_ratio)
+        train_tuple = tuple(random.sample(performances_data, train_number))
 
-    labeled_data_train_one_dimension = []  # explain that in order to prevent data leakeage (group leakage), we split *performances* randomly into train-test
-    labeled_data_train_two_dimensions = []
-    labeled_data_test = []
-    train_number = round(len(all_performances_grades) * train_ratio)
-    train_tuple = tuple(random.sample(range(0, len(all_performances_grades)), train_number))
+        teachers = create_fake_teachers(number_of_teachers)
 
-    label_mapping = {"0": ["0", "-1"], "3": ["1", "-1"], "1": ["0", "0"], "2": ["0", "1"], "4": ["1", "0"],
-                     "5": ["1", "1"]}
+        label_mapping = {"0": ["0", "-1"], "3": ["1", "-1"], "1": ["0", "0"], "2": ["0", "1"], "4": ["1", "0"],
+                         "5": ["1", "1"]}
 
-    for j in range(len(all_performances_grades)):  # for every performance --> j
-        for i in range(len(teachers_scores[0])):  # for every teacher --> i
-            if j in train_tuple:
-                labeled_data_train_one_dimension.append([all_performances_grades[j][0],  # Rhythm tech score
-                                                         all_performances_grades[j][1],  # Dynamics tech score
-                                                         all_performances_grades[j][2],  # Articulation tech score
-                                                         all_performances_grades[j][3],  # Pitch tech score
-                                                         all_performances_grades[j][4],  # Tempo tech score
-                                                         teachers_scores[j][i][0],  # i Teacher's Pitch score
-                                                         teachers_scores[j][i][1],  # i Teacher's Rhythm score
-                                                         teachers_scores[j][i][2],  # i Teacher's Tempo score
-                                                         teachers_scores[j][i][3],
-                                                         # i Teacher's Articulation & Dynamics score
-                                                         teachers_next_step[j][i]])  # i Teacher's next step
+        for song in performances_data:
+            for performance in song.fake_performances:
+                rhythm_tech_score, velocity_tech_score, articulation_tech_score, pitch_tech_score, tempo_tech_score = performance.get_features()
+                if rhythm_tech_score != -1:
+                    pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade, a_d_teachers_grade, next_step = \
+                        fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score, articulation_tech_score,
+                                               pitch_tech_score, tempo_tech_score, majority_or_avg)
+                    if song in train_tuple:
+                        labeled_data_train_one_dimension.append(
+                            [rhythm_tech_score, velocity_tech_score, articulation_tech_score,
+                             pitch_tech_score, tempo_tech_score,
+                             pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade,
+                             a_d_teachers_grade, next_step])
 
-                labeled_data_train_two_dimensions.append(labeled_data_train_one_dimension[-1].copy())
-                dim1, dim2 = label_mapping[labeled_data_train_two_dimensions[-1][9]][0], \
-                             label_mapping[labeled_data_train_two_dimensions[-1][9]][1]
+                        labeled_data_train_two_dimensions.append(labeled_data_train_one_dimension[-1].copy())
+                        dim1, dim2 = label_mapping[labeled_data_train_two_dimensions[-1][9]][0], \
+                                     label_mapping[labeled_data_train_two_dimensions[-1][9]][1]
 
-                labeled_data_train_two_dimensions[-1][9] = dim1
-                labeled_data_train_two_dimensions[-1].append(dim2)
+                        labeled_data_train_two_dimensions[-1][9] = dim1
+                        labeled_data_train_two_dimensions[-1].append(dim2)
 
-            else:
-                labeled_data_test.append([all_performances_grades[j][0],  # Rhythm tech score
-                                          all_performances_grades[j][1],  # Dynamics tech score
-                                          all_performances_grades[j][2],  # Articulation tech score
-                                          all_performances_grades[j][3],  # Pitch tech score
-                                          all_performances_grades[j][4],  # Tempo tech score
-                                          teachers_scores[j][i][0],  # i Teacher's Pitch score
-                                          teachers_scores[j][i][1],  # i Teacher's Rhythm score
-                                          teachers_scores[j][i][2],  # i Teacher's Tempo score
-                                          teachers_scores[j][i][3],  # i Teacher's Articulation & Dynamics score
-                                          teachers_next_step[j][i]])  # i Teacher's next step
+                    else:
+                        labeled_data_test.append(
+                            [rhythm_tech_score, velocity_tech_score, articulation_tech_score,
+                             pitch_tech_score, tempo_tech_score,
+                             pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade,
+                             a_d_teachers_grade, next_step])
 
     train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
                                        columns=['Rhythm', 'Dynamics', 'Articulation', 'Pitch', 'Tempo',
@@ -115,14 +104,9 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
     return train_one_dimension, train_two_dimensions
 
 
-def fake_teachers_feedback(performances, number):
-    """
-    return: [j][i] = [[perfomance_j_grade for teacher_i]]
-    """
-    next_step = [[] for x in range(len(performances))]
-    scores = [[] for x in range(len(performances))]
-
-    for i in range(number):
+def create_fake_teachers(number_of_teachers):
+    teachers = []
+    for i in range(number_of_teachers):
         pitch_unique_stumps = round(random.uniform(-0.15, 0.15), 2)
         rhythm_unique_stumps = round(random.uniform(-0.25, 0.25), 2)
         tempo_unique_stumps = round(random.uniform(-0.25, 0.25), 2)
@@ -138,24 +122,45 @@ def fake_teachers_feedback(performances, number):
         teacher_i = Teacher(pitch_unique_stumps, rhythm_unique_stumps, tempo_unique_stumps,
                             articulation_unique_stumps, dynamics_unique_stumps,
                             pitch_unique_score, rhythm_unique_score, tempo_unique_score,
-                            articulation_unique_score, dynamics_unique_score,
-                            )
+                            articulation_unique_score, dynamics_unique_score)
+        teachers.append(teacher_i)
 
-        for j in range(len(performances)):
-            next_step[j].append(teacher_i.give_next_step_recco_stumps(rhythm_score=performances[j][0],
-                                                                      dynamics_score=performances[j][1],
-                                                                      articulation_score=performances[j][2],
-                                                                      pitch_score=performances[j][3],
-                                                                      tempo_score=performances[j][4]))
+    return teachers
 
-            performance_grades = [teacher_i.give_scores(performances[j][3], "Pitch"),
-                                  teacher_i.give_scores(performances[j][0], "Rhythm"),
-                                  teacher_i.give_scores(performances[j][4], "Tempo"),
-                                  teacher_i.give_scores([performances[j][2], performances[j][1]],
-                                                        "Articulation & Dynamics")]
-            scores[j].append(performance_grades)
 
-    return scores, next_step
+def fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score, articulation_tech_score, pitch_tech_score,
+                           tempo_tech_score, majority_or_avg):
+    pitch = []
+    rhythm = []
+    tempo = []
+    a_d = []
+    next_step = []
+
+    for teacher in teachers:
+        pitch.append(teacher.give_scores(pitch_tech_score, "Pitch"))
+        rhythm.append(teacher.give_scores(rhythm_tech_score, "Rhythm"))
+        tempo.append(teacher.give_scores(tempo_tech_score, "Tempo"))
+        a_d.append(teacher.give_scores([articulation_tech_score, velocity_tech_score], "Articulation & Dynamics"))
+        next_step.append(teacher.give_next_step_recco_stumps(rhythm_score=rhythm_tech_score,
+                                                                  dynamics_score=velocity_tech_score,
+                                                                  articulation_score=articulation_tech_score,
+                                                                  pitch_score=pitch_tech_score,
+                                                                  tempo_score=tempo_tech_score))
+
+    if majority_or_avg:
+        labels = [max(set(pitch), key=pitch.count),
+                  max(set(tempo), key=tempo.count),
+                  max(set(rhythm), key=rhythm.count),
+                  max(set(a_d), key=a_d.count),
+                  max(set(next_step), key=next_step.count)]
+    else:
+        labels = [round((sum(pitch) / len(pitch))),
+                  round((sum(tempo) / len(tempo))),
+                  round((sum(rhythm) / len(rhythm))),
+                  round((sum(a_d) / len(a_d))),
+                  round((sum(next_step) / len(next_step)))]
+
+    return labels[0], labels[2], labels[1], labels[3], labels[4]
 
 
 class Teacher:

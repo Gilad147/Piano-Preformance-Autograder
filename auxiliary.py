@@ -1,4 +1,5 @@
 import Performance_class
+import Song_Class
 import numpy as np
 from midiutil.MidiFile import MIDIFile
 import pretty_midi
@@ -22,6 +23,7 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
         for song in songs:
             song_name = song.name.split(".")[0]
             if song.is_file() and song.name != '.DS_Store':
+                song_instance = Song_Class.Song(song_name)
                 flawed_performances, original_midi_data = create_random_mistakes(basepath + song.name, song_name, n,
                                                                                  min_noise=0, max_noise=0.9,
                                                                                  min_percentage=0.4, max_percentage=1)
@@ -36,7 +38,8 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
                     else:
                         fake_data_performance = np2mid(data.midi_df, "midfilename", original_midi_data[i],
                                                        write_midi_file=False)
-                        all_data.append(fake_data_performance)
+                    song_instance.fake_performances.append(fake_data_performance)
+            all_data.append(song_instance)
     return all_data
 
 
