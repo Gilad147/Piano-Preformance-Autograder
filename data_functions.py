@@ -94,7 +94,8 @@ def processSurveyResults(csv_path, folder_path, n=maxNumberOfTeachers):
         performance_class.teachers_grades = grades_df.to_numpy()
         performance_class.give_labels(majority_or_avg=True)
         labels = performance_class.labels
-        rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = performance_class.get_features()
+        rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature = \
+            performance_class.get_features()
         performance_attributes = {'Rhythm': rhythm_feature, 'Dynamics': velocity_feature,
                                   'Articulation': duration_feature, 'Pitch': pitch_feature, 'Tempo': tempo_feature,
                                   "Teacher's Pitch": labels[0], "Teacher's Rhythm": labels[1],
@@ -187,7 +188,7 @@ def plot_data_by_real_teachers(csv_path, folder_path, fake_teachers=0):
         for i in range(5, 7):
             train_one_dim, train_two_dim, test = getDataForSL(csv_path,
                                                               folder_path,
-                                                              train_ratio=i / 10, fake_teachers = fake_teachers)
+                                                              train_ratio=i / 10, fake_teachers=fake_teachers)
             one_dim_scores, two_dim_scores, pitch_scores, tempo_scores, rhythm_scores, a_d_scores = \
                 auxiliary.trainAndTest(train_one_dim, train_two_dim, test, True)
             one_dim.append(one_dim_scores)

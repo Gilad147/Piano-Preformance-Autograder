@@ -13,6 +13,7 @@ import Automated_teacher
 #     auxiliary.np2mid(data.midi_df, path)
 #
 # Automated_teacher.fake_teachers_algorithm('fake music samples')
+auxiliary.change_midi_file_tempo("songs/original songs/Achbar Hizaher.midi","songs/original songs - fake data/Achbar Hizaher/spedup.midi",0.5)
 
 # without creating MIDI files
 generated_data = auxiliary.generate_random_mistakes_data('original songs', 1000, False)

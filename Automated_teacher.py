@@ -52,7 +52,8 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
                 rhythm_tech_score, velocity_tech_score, articulation_tech_score, pitch_tech_score, tempo_tech_score = performance.get_features()
                 if rhythm_tech_score != -1:
                     pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade, a_d_teachers_grade, next_step = \
-                        fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score, articulation_tech_score,
+                        fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score,
+                                               articulation_tech_score,
                                                pitch_tech_score, tempo_tech_score, majority_or_avg)
                     if song in train_tuple:
                         labeled_data_train_one_dimension.append(
@@ -142,10 +143,10 @@ def fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score, art
         tempo.append(teacher.give_scores(tempo_tech_score, "Tempo"))
         a_d.append(teacher.give_scores([articulation_tech_score, velocity_tech_score], "Articulation & Dynamics"))
         next_step.append(teacher.give_next_step_recco_stumps(rhythm_score=rhythm_tech_score,
-                                                                  dynamics_score=velocity_tech_score,
-                                                                  articulation_score=articulation_tech_score,
-                                                                  pitch_score=pitch_tech_score,
-                                                                  tempo_score=tempo_tech_score))
+                                                             dynamics_score=velocity_tech_score,
+                                                             articulation_score=articulation_tech_score,
+                                                             pitch_score=pitch_tech_score,
+                                                             tempo_score=tempo_tech_score))
 
     if majority_or_avg:
         labels = [max(set(pitch), key=pitch.count),
