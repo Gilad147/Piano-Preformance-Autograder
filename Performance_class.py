@@ -183,10 +183,10 @@ class Performance:
                       max(set(a_d_scores), key=a_d_scores.count),
                       max(set(next_step), key=next_step.count)]
         else:
-            labels = [round((sum(pitch_scores) / len(pitch_scores))),
-                      round((sum(tempo_scores) / len(tempo_scores))),
-                      round((sum(rhythm_scores) / len(rhythm_scores))),
-                      round((sum(a_d_scores) / len(a_d_scores))),
-                      round((sum(next_step) / len(next_step)))]
+            labels = [str(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
+                      str(round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
+                      str(round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
+                      str(round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
+                      str(round((sum(list(map(int, next_step))) / len(next_step))))]
 
         self.labels = labels
