@@ -133,9 +133,10 @@ def play_GUI():
             chart_path = directory_encoder_chart[chosen_song]
             if songChosen.get() != "":
                 messagebox.showinfo("Attention",
-                                    "For you convenience, 2 buttons are available for use"
-                                    "\nRecord - Start and Reset recording "
-                                    "\nStop - End your trial and save recording")
+                                    "For you convenience, 3 buttons are available for use"
+                                    "\nRecord - Start recording "
+                                    "\nStop - End your trial and save recording"
+                                    "\nReset - Delete recording")
             window.destroy()
             midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level)
 
