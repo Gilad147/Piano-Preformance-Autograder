@@ -45,11 +45,11 @@ def determine_velocity_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_overall_feedback(scores, breakpoints=[0.4, 0.7, 0.9],
+def determine_overall_feedback(scores, breakpoints=[0.4, 0.8, 0.9],
                                grades=None):
     if grades is None:
         grades = ['there is still some work to do',
-                  'you did a good job', 'you played very well'
+                  'you did a good job', 'you played very well',
                                         'it was excellent playing']
     i = bisect.bisect(breakpoints, scores)
     return grades[i]
@@ -58,10 +58,10 @@ def determine_overall_feedback(scores, breakpoints=[0.4, 0.7, 0.9],
 def save_feedback_to_directory(path, grades, feedback, recommendation):
     text_file = open(path, "w")
     text_file.write("Numeric scores: "
-                    "\nPitch-" + str(grades[0]) +
-                    "\nTempo-" + str(grades[1]) +
-                    "\nRhythm-" + str(grades[2]) +
-                    "\nArticulation-" + str(grades[3]))
+                    "\nPitch-" + str(grades[3]) +
+                    "\nTempo-" + str(grades[4]) +
+                    "\nRhythm-" + str(grades[0]) +
+                    "\nArticulation-" + str(grades[1]))
     text_file.write("\n\nVerbal Feedback: \n" + feedback[73:])
     text_file.write("Recommendation: " + recommendation)
     text_file.close()
