@@ -154,11 +154,11 @@ def fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score, art
                   max(set(a_d), key=a_d.count),
                   max(set(next_step), key=next_step.count)]
     else:
-        labels = [round((sum(pitch) / len(pitch))),
-                  round((sum(tempo) / len(tempo))),
-                  round((sum(rhythm) / len(rhythm))),
-                  round((sum(a_d) / len(a_d))),
-                  round((sum(next_step) / len(next_step)))]
+        labels = [str(round((sum(list(map(int, pitch))) / len(pitch)))),
+                  str(round((sum(list(map(int, tempo))) / len(tempo)))),
+                  str(round((sum(list(map(int, rhythm))) / len(rhythm)))),
+                  str(round((sum(list(map(int, a_d))) / len(a_d)))),
+                  str(round((sum(list(map(int, next_step))) / len(next_step))))]
 
     return labels[0], labels[2], labels[1], labels[3], labels[4]
 

@@ -126,6 +126,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
 
     ### knn (classification)
     max_knn_score = 0
+    max_knn_val = 0
     for i in range(3, 10):
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
@@ -134,6 +135,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
+            max_knn_val = i
 
     model_mlp = MLPClassifier()
     model_mlp.fit(x_train, y_train)
@@ -147,6 +149,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         print("Random Forest (gini) Score: " + str(random_forest_gini_score))
         print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
         print("Logistic Regression Score: " + str(logistic_regression_score))
+        print("KNN with k = " + str(max_knn_val) + " Score: " + str(max_knn_score))
         print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
         print("###########")
         print(" ")
@@ -207,6 +210,7 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
 
     ### knn (classification)
     max_knn_score = 0
+    max_knn_val = 0
     for i in range(3, 10):
         model_knn_1 = KNeighborsClassifier(n_neighbors=i)
         model_knn_2 = KNeighborsClassifier(n_neighbors=i)
@@ -217,6 +221,7 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
         #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
+            max_knn_val = i
 
     model_mlp_1 = MLPClassifier()
     model_mlp_2 = MLPClassifier()
@@ -233,6 +238,7 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
         print("Random Forest (gini) Score: " + str(random_forest_gini_score))
         print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
         print("Logistic Regression Score: " + str(logistic_regression_score))
+        print("KNN with k = " + str(max_knn_val) + " Score: " + str(max_knn_score))
         print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
         print("###########")
         print(" ")
@@ -268,6 +274,7 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
 
     ### knn (classification)
     max_knn_score = 0
+    max_knn_val = 0
     for i in range(3, 10):
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
@@ -276,6 +283,7 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
         #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
+            max_knn_val = i
 
     model_mlp = MLPClassifier()
     model_mlp.fit(x_train, y_train)
@@ -290,6 +298,7 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
         print("Random Forest (gini) Score: " + str(random_forest_gini_score))
         print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
         print("Logistic Regression Score: " + str(logistic_regression_score))
+        print("KNN with k = " + str(max_knn_val) + " Score: " + str(max_knn_score))
         print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
         print("###########")
         print(" ")
