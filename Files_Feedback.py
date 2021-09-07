@@ -95,6 +95,7 @@ def reformat_file_by_type(file_name):
     if 'midi' in file_name:
         return file_name[:-5]
 
+
 def next_piece_by_level(level, song_name):
     """Randomly draw a piece by the level given
         level: string digit stating the desired songbook level
@@ -131,6 +132,7 @@ def next_piece_by_level(level, song_name):
     next_chart = os.path.join(next_songbook_path, next_chart[0])
     next_midi = os.path.join(next_songbook_path, next_midi[0])
     return next_chart, next_midi, name, next_level
+
 
 def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level):
     # interprets predicted recommendation for student into the next trial settings
