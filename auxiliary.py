@@ -120,7 +120,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
 
     ### logistic regression (classification)
 
-    model_lr = LogisticRegression(max_iter=1000)
+    model_lr = LogisticRegression(max_iter=500)
     model_lr.fit(x_train, y_train)
     logistic_regression_score = model_lr.score(x_test, y_test)
 
@@ -131,13 +131,11 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
         knn_score = model_knn.score(x_test, y_test)
-        # if to_print:
-        #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
             max_knn_val = i
 
-    model_mlp = MLPClassifier()
+    model_mlp = MLPClassifier(max_iter=199)
     model_mlp.fit(x_train, y_train)
     mlp_score = model_mlp.score(x_test, y_test)
     ### MLP (classification)
@@ -202,8 +200,8 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
 
     ### logistic regression (classification)
 
-    model_lr_1 = LogisticRegression(max_iter=1000)
-    model_lr_2 = LogisticRegression(max_iter=1000)
+    model_lr_1 = LogisticRegression(max_iter=500)
+    model_lr_2 = LogisticRegression(max_iter=500)
     model_lr_1.fit(x_train, y_train_1)
     model_lr_2.fit(x_train, y_train_2)
     logistic_regression_score = model_score(model_lr_1, model_lr_2, x_test, y_test)
@@ -217,14 +215,12 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
         model_knn_1.fit(x_train, y_train_1)
         model_knn_2.fit(x_train, y_train_2)
         knn_score = model_score(model_knn_1, model_knn_2, x_test, y_test)
-        # if to_print:
-        #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
             max_knn_val = i
 
-    model_mlp_1 = MLPClassifier()
-    model_mlp_2 = MLPClassifier()
+    model_mlp_1 = MLPClassifier(max_iter=199)
+    model_mlp_2 = MLPClassifier(max_iter=199)
     model_mlp_1.fit(x_train, y_train_1)
     model_mlp_2.fit(x_train, y_train_2)
     mlp_score = model_score(model_mlp_1, model_mlp_2, x_test, y_test)
@@ -250,9 +246,13 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
     if feature_name == "Articulation & Dynamics":
         x_train = labeled_data_train[['Articulation', 'Dynamics']]
         x_test = labeled_data_test[['Articulation', 'Dynamics']]
+    elif feature_name == "Rhythm" or feature_name == "Tempo":
+        x_train = labeled_data_train[['Articulation', 'Rhythm', 'Tempo']]
+        x_test = labeled_data_test[['Articulation', 'Rhythm', 'Tempo']]
     else:
         x_train = labeled_data_train[feature_name].to_numpy().reshape(-1, 1)
         x_test = labeled_data_test[feature_name].to_numpy().reshape(-1, 1)
+
     y_train = labeled_data_train["Teacher's " + feature_name].to_numpy()
     y_test = labeled_data_test["Teacher's " + feature_name].to_numpy()
 
@@ -268,7 +268,7 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
 
     ### logistic regression (classification)
 
-    model_lr = LogisticRegression(max_iter=5000)
+    model_lr = LogisticRegression(max_iter=500)
     model_lr.fit(x_train, y_train)
     logistic_regression_score = model_lr.score(x_test, y_test)
 
@@ -279,13 +279,11 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
         knn_score = model_knn.score(x_test, y_test)
-        # if to_print:
-        #     print("KNN with k = " + str(i) + " Score: " + str(knn_score))
         if knn_score > max_knn_score:
             max_knn_score = knn_score
             max_knn_val = i
 
-    model_mlp = MLPClassifier()
+    model_mlp = MLPClassifier(max_iter=199)
     model_mlp.fit(x_train, y_train)
     mlp_score = model_mlp.score(x_test, y_test)
 
@@ -310,9 +308,21 @@ def model_score(model_1, model_2, x_test, y_test):
     label_mapping = {"0": {"-1": "0", "0": "1", "1": "2"}, "1": {"-1": "3", "0": "4", "1": "5"}}
     cnt = 0
     for i in range(len(x_test)):
-        label_1 = model_1.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]
-        label_2 = model_2.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]
+        label_1 = str(int(model_1.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]))
+        label_2 = str(int(model_2.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0]))
         one_dimension_label = label_mapping[label_1][label_2]
-        if one_dimension_label == str(y_test[i]):
+        test_label = str(int(y_test.iloc[i]))
+        if one_dimension_label == test_label:
             cnt += 1
     return cnt / len(x_test)
+
+
+def trainAndTest(train_one_dim, train_two_dim, test, to_print=False):
+    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, to_print)
+    two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, True,
+                                                              to_print)
+    pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", to_print)
+    tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", to_print)
+    rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", to_print)
+    a_d_scores = test_algorithms_scores(train_one_dim, test, "Articulation & Dynamics", to_print)
+    return one_dim_scores, two_dim_scores, pitch_scores, tempo_scores, rhythm_scores, a_d_scores
