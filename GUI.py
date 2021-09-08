@@ -138,7 +138,7 @@ def play_GUI():
                                     "\nStop - End your trial and save recording"
                                     "\nReset - Delete recording")
             window.destroy()
-            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level)
+            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60)
 
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)

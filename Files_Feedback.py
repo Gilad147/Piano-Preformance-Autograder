@@ -5,7 +5,7 @@ import numpy as np
 
 
 # functions for numeric grades to written feedback
-def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.7],
                               grades=None):
     if grades is None:
         grades = ['you do not pay enough attention to rhythm',
@@ -15,7 +15,7 @@ def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_pitch_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_pitch_feedback(scores, breakpoints=[0.4, 0.7],
                              grades=None):
     if grades is None:
         grades = ['you have a lot of missing or wrong notes',
@@ -25,7 +25,7 @@ def determine_pitch_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_tempo_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_tempo_feedback(scores, breakpoints=[0.4, 0.7],
                              grades=None):
     if grades is None:
         grades = ['your feel of tempo is not consistent',
@@ -35,7 +35,7 @@ def determine_tempo_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_velocity_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_velocity_feedback(scores, breakpoints=[0.4, 0.7],
                                 grades=None):
     if grades is None:
         grades = ['you are not sensitive enough to notes volume',

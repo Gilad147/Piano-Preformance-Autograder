@@ -4,12 +4,9 @@ from tkinter import *
 import numpy as np
 import simpleaudio as sa
 
+
 class Metronome:
     """Create Metronome app with class instance."""
-
-    def playsound(self, frequency, duration):
-        # apt-get install beep
-        os.system('beep -f %s -l %s' % (frequency, duration))
 
     def sound(self, x, z):
         frequency = x  # Our played note will be 440 Hz
@@ -33,7 +30,7 @@ class Metronome:
         # Wait for playback to finish before exiting
         play_obj.wait_done()
 
-    def __init__(self, root, beats):
+    def __init__(self, root, beats, tempo):
         """Initiate default values for class and call interface().
         Args:
             root (tkinter.Tk): Main class instance for tkinter.
@@ -41,6 +38,7 @@ class Metronome:
         """
         self.root = root
         self.beats = beats
+        self.tempo = tempo
 
         self.start = False
         self.bpm = 0
@@ -58,14 +56,14 @@ class Metronome:
         frame = Frame()
         frame.pack()
 
-        entry = Entry(frame, width=8, justify="center")
-        entry.insert(0, "60")
-        entry.grid(row=0, column=0, padx=5, sticky="E")
+        # entry = Entry(frame, width=8, justify="center")
+        # entry.insert(0, "60")
+        # entry.grid(row=0, column=0, padx=5, sticky="E")
 
         spinbox = Spinbox(frame, width=5, values=self.beats, wrap=True)
         spinbox.grid(row=0, column=1, sticky="E")
 
-        label_bpm = Label(frame, text="BPM:")
+        label_bpm = Label(frame, text="BPM: " + str(self.tempo))
         label_bpm.grid(row=0, column=0, sticky="W")
 
         label_time = Label(frame, text="Time:")
@@ -75,7 +73,7 @@ class Metronome:
         label_count.grid(row=1, column=0, columnspan=2)
 
         button_start = Button(frame, text="Start", width=10, height=2,
-                              command=lambda: self.start_counter(entry,
+                              command=lambda: self.start_counter(self.tempo,
                                                                  spinbox))
         button_start.grid(row=2, column=0, padx=10, sticky="W")
 
@@ -93,7 +91,7 @@ class Metronome:
         """
         if not self.start:
             try:
-                self.bpm = int(entry.get())
+                self.bpm = self.tempo
             except ValueError:
                 self.bpm = 60
             else:
