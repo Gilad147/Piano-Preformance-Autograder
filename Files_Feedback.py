@@ -5,7 +5,7 @@ import numpy as np
 
 
 # functions for numeric grades to written feedback
-def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.7],
                               grades=None):
     if grades is None:
         grades = ['you do not pay enough attention to rhythm',
@@ -15,7 +15,7 @@ def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_pitch_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_pitch_feedback(scores, breakpoints=[0.4, 0.7],
                              grades=None):
     if grades is None:
         grades = ['you have a lot of missing or wrong notes',
@@ -25,7 +25,7 @@ def determine_pitch_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_tempo_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_tempo_feedback(scores, breakpoints=[0.4, 0.7],
                              grades=None):
     if grades is None:
         grades = ['your feel of tempo is not consistent',
@@ -35,7 +35,7 @@ def determine_tempo_feedback(scores, breakpoints=[0.4, 0.8],
     return grades[i]
 
 
-def determine_velocity_feedback(scores, breakpoints=[0.4, 0.8],
+def determine_velocity_feedback(scores, breakpoints=[0.4, 0.7],
                                 grades=None):
     if grades is None:
         grades = ['you are not sensitive enough to notes volume',
@@ -134,18 +134,32 @@ def next_piece_by_level(level, song_name):
     return next_chart, next_midi, name, next_level
 
 
-def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level):
+def find_new_tempo(tempo, recommendation):
+    if int(recommendation) == 0:
+        tempo -= 20
+        if tempo < 60:
+            tempo = 60
+    if int(recommendation) == 2:
+        tempo += 20
+        if tempo > 160:
+            tempo = 160
+    tempo = round(tempo)
+    return tempo
+
+
+def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo):
     # interprets predicted recommendation for student into the next trial settings
+    tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
-        return chart_path, original_midi, song_name, song_level
+        return chart_path, original_midi, song_name, song_level, tempo
     else:
         if int(recommendation) == 4:
-            return next_piece_by_level(song_level, song_name)
+            return next_piece_by_level(song_level, song_name), tempo
         else:
             if int(recommendation) == 3:
-                return next_piece_by_level(song_level - 1, song_name)
+                return next_piece_by_level(song_level - 1, song_name), tempo
             else:
-                return next_piece_by_level(song_level + 1, song_name)
+                return next_piece_by_level(song_level + 1, song_name), tempo
 
 
 def directories(Data_Played, subject_id, song_name):

@@ -13,9 +13,10 @@ from Performance_class import Performance
 from auxiliary import np2mid
 import pretty_midi
 from Files_Feedback import *
+from Metronome import Metronome
 
 
-def midi(chart_path, original_midi, subject_id, song_name, song_level):
+def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
     """Initialize midi trial with given arguments
         chart_path: an absolute path of the chart that is given to student
         original_midi: an absolute path of original midi track of chosen song
@@ -94,7 +95,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         # grades = performance.predict_grades(tech_grades)
         # recommendation = performance.predict_reccomendation(tech_grades)
 
-        recommendation = '5'
+        recommendation = '2'
         grades = tech_grades
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
@@ -103,19 +104,21 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                 widget.destroy()
             window.destroy()
         else:
-            if int(recommendation) > 3:
-                MsgBox = messagebox.askquestion('Practice continues',
-                                                'Do you want to go on with my recommendation?\n\n '
-                                                '*choosing "no" means playing the same piece again', icon='warning')
-                if MsgBox == 'yes':
-                    next_chart_path, next_original_midi, next_song_name, next_song_level = \
-                        next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level)
+            MsgBox = messagebox.askquestion('Practice continues',
+                                            'Do you want to go on with my recommendation?\n\n '
+                                            '*choosing "no" means playing the same piece again', icon='warning')
+            if MsgBox == 'yes':
+                next_chart_path, next_original_midi, next_song_name, next_song_level, next_tempo = \
+                    next_action_by_recommendation(recommendation, chart_path, original_midi,
+                                                  song_name, song_level, tempo)
+            else:
+                next_chart_path = chart_path
+                next_original_midi = original_midi
+                next_song_name = song_name
+                next_song_level = song_level
+                next_tempo = tempo
             window.destroy()
-            next_chart_path = chart_path
-            next_original_midi = original_midi
-            next_song_name = song_name
-            next_song_level = song_level
-            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level)
+            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level, next_tempo)
 
     def record(data):
         data[0] = [1, 1, 1, 1]
@@ -133,7 +136,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         stop_button = Button(window, text='Stop', image=photo2, command=lambda: stop(Recording_Pushed_Last))
         stop_button.image = photo2
-        stop_button.place(x=0, y=80)
+        stop_button.place(x=0, y=120)
 
     def place_record_button():
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
@@ -144,7 +147,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         record_button = Button(window, text='Record', image=photo2, command=lambda: record(Raw_Input))
         record_button.image = photo2
-        record_button.place(x=140, y=80)
+        record_button.place(x=140, y=120)
         return record_button
 
     def place_clear_button():
@@ -156,7 +159,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         clear_button = Button(window, text='Clear', image=photo2, command=lambda: clear(Raw_Input))
         clear_button.image = photo2
-        clear_button.place(x=280, y=80)
+        clear_button.place(x=280, y=120)
         return clear_button
 
     def place_note_chart(path):
@@ -165,7 +168,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         img = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         img_label = Label(window, image=img)
         img_label.image = img
-        img_label.place(x=0, y=230)
+        img_label.place(x=0, y=270)
 
     def place_recording_clearing_state(r_or_c):
         if r_or_c:
@@ -179,7 +182,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
         img = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         img_label = Label(window, image=img)
         img_label.image = img
-        img_label.place(x=450, y=82)
+        img_label.place(x=450, y=122)
         return img_label
 
     stream = pyaudio.PyAudio().open(
@@ -203,12 +206,19 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
     window = Tk()
     window.title("Trial")
     window.attributes("-fullscreen", True)
+    beats = ["4/4", "6/8", "2/4", "3/4"]
+    metronome = Metronome(window, beats, tempo)
     window.resizable(width=FALSE, height=FALSE)
     # window['bg']='#33ABFF'
     fontStyle = tkFont.Font(family="Calibri", size=26)
-    myLabel1 = Label(window, text="To start/reset recording press RECORD"
-                                  "\nTo save recording and end trial press STOP", font=fontStyle)
+    myLabel1 = Label(window, text="To start recording press RECORD"
+                                  "\nTo save recording and end trial press STOP"
+                                  "\nTo delete recording and start over press CLEAR", font=fontStyle)
     myLabel1.place(x=0, y=0)
+    myLabel2 = Label(window, text="For your convenience you can use a metronome"
+                                  "\nThe metronome will guide you to the requested tempo"
+                                  "\nthe metronome will stop once you start playing")
+    myLabel2.place(x=850, y=40)
     place_stop_button()
     record_or_reset_button = place_record_button()
     place_note_chart(chart_path)
@@ -263,6 +273,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level):
                         going = False
                 if pygame.midi.get_init():
                     if keyboard.poll():
+                        metronome.stop_counter()
                         midi_events = keyboard.read(10)
                         if midi_events[0][0][1] != 1:
                             if not Started:
