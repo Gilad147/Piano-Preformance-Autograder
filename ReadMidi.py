@@ -109,16 +109,15 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
                                                 'Do you want to go on with my recommendation?\n\n '
                                                 '*choosing "no" means playing the same piece again', icon='warning')
                 if MsgBox == 'yes':
-                    next_chart_path, next_original_midi, next_song_name, next_song_level = \
-                        next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level)
+                    next_chart_path, next_original_midi, next_song_name, next_song_level, next_tempo = \
+                        next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo)
             window.destroy()
             next_chart_path = chart_path
             next_original_midi = original_midi
             next_song_name = song_name
             next_song_level = song_level
-            if recommendation == '0':
-                tempo =
-            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level, tempo)
+            next_tempo = tempo
+            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level, next_tempo)
 
     def record(data):
         data[0] = [1, 1, 1, 1]
