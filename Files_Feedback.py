@@ -136,13 +136,13 @@ def next_piece_by_level(level, song_name):
 
 def find_new_tempo(tempo, recommendation):
     if int(recommendation) == 0:
-        tempo = tempo / 1.5
+        tempo -= 20
         if tempo < 60:
             tempo = 60
     if int(recommendation) == 2:
-        tempo = tempo * 1.5
-        if tempo > 240:
-            tempo = 240
+        tempo += 20
+        if tempo > 160:
+            tempo = 160
     tempo = round(tempo)
     return tempo
 
@@ -151,7 +151,7 @@ def next_action_by_recommendation(recommendation, chart_path, original_midi, son
     # interprets predicted recommendation for student into the next trial settings
     tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
-        return chart_path, original_midi, song_name, song_level
+        return chart_path, original_midi, song_name, song_level, tempo
     else:
         if int(recommendation) == 4:
             return next_piece_by_level(song_level, song_name), tempo

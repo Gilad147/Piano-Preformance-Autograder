@@ -95,7 +95,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
         # grades = performance.predict_grades(tech_grades)
         # recommendation = performance.predict_reccomendation(tech_grades)
 
-        recommendation = '5'
+        recommendation = '2'
         grades = tech_grades
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
@@ -104,19 +104,20 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
                 widget.destroy()
             window.destroy()
         else:
-            if int(recommendation) > 3:
-                MsgBox = messagebox.askquestion('Practice continues',
-                                                'Do you want to go on with my recommendation?\n\n '
-                                                '*choosing "no" means playing the same piece again', icon='warning')
-                if MsgBox == 'yes':
-                    next_chart_path, next_original_midi, next_song_name, next_song_level, next_tempo = \
-                        next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo)
+            MsgBox = messagebox.askquestion('Practice continues',
+                                            'Do you want to go on with my recommendation?\n\n '
+                                            '*choosing "no" means playing the same piece again', icon='warning')
+            if MsgBox == 'yes':
+                next_chart_path, next_original_midi, next_song_name, next_song_level, next_tempo = \
+                    next_action_by_recommendation(recommendation, chart_path, original_midi,
+                                                  song_name, song_level, tempo)
+            else:
+                next_chart_path = chart_path
+                next_original_midi = original_midi
+                next_song_name = song_name
+                next_song_level = song_level
+                next_tempo = tempo
             window.destroy()
-            next_chart_path = chart_path
-            next_original_midi = original_midi
-            next_song_name = song_name
-            next_song_level = song_level
-            next_tempo = tempo
             midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level, next_tempo)
 
     def record(data):
