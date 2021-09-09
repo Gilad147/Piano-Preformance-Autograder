@@ -119,23 +119,23 @@ class Performance:
         else:
             new_midi_df = np.copy(self.midi_df)
             reference = self.midi_df
-        if noise > 1 or noise < -1 or percentage < 0 or percentage > 1:
-            print("Input values should be between -1 and 1")
+        if noise > 1 or noise < 0 or percentage < 0 or percentage > 1:
+            print("Input values should be between 0 and 1")
 
         if feature == "rhythm":
             accumulation_mistake = 0
             for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage and i > 0:
-                    accumulation_mistake -= noise * (note[0] - reference[i - 1][0])
+                    accumulation_mistake += noise * (note[0] - reference[i - 1][0])
                 note[0] += accumulation_mistake
                 note[1] += accumulation_mistake
         if feature == "duration":
             for i, note in enumerate(new_midi_df):
                 if np.random.rand() < percentage:
                     if i + 1 == new_midi_df.shape[0] or note[1] + (note[1] - note[0]) * noise < reference[i + 1][0]:
-                        note[1] -= (note[1] - note[0]) * noise
+                        note[1] += (note[1] - note[0]) * noise
                     else:
-                        note[1] = reference[i + 1][0] - 0.00005
+                        note[1] = reference[i + 1][0] - 0.005
         if feature == "velocity":
             for note in new_midi_df:
                 if np.random.rand() < percentage:
