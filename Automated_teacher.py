@@ -16,7 +16,7 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
 
     train_number = round(len(performances_data) * train_ratio)
     train_tuple = tuple(random.sample(performances_data, train_number))
-
+    train_tuple = tuple(random.sample(range(0, len(performances_data)), train_number))
     teachers = create_fake_teachers(number_of_teachers)
 
     label_mapping = {"0": ["0", "-1"], "3": ["1", "-1"], "1": ["0", "0"], "2": ["0", "1"], "4": ["1", "0"],
