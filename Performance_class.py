@@ -5,6 +5,9 @@ from difflib import SequenceMatcher
 
 
 class Performance:
+    """
+    note that tempo is not being calculated for songs with <20 different note start times
+    """
     def __init__(self, path, name, player_name, original_path, prettyMidiFile_performance=None,
                  prettyMidiFile_original=None):
         self.name = name
@@ -16,8 +19,16 @@ class Performance:
         else:
             self.midi_data = prettyMidiFile_performance
             self.midi_data_original = prettyMidiFile_original
-        self.tempo = self.midi_data.estimate_tempo()
+
         midi_list = []
+        if len(self.midi_data.instruments) > 1:
+            one_instrument = self.midi_data.instruments[0]
+            for i in range(1, len(self.midi_data.instruments)):
+                one_instrument.notes += self.midi_data.instruments[i].notes
+            one_instrument.notes = list(set(one_instrument.notes))
+            one_instrument.notes.sort(key=lambda x: x.start)
+            self.midi_data.instruments = [one_instrument]
+
         for instrument in self.midi_data.instruments:
             for note in instrument.notes:
                 start = note.start
@@ -30,7 +41,20 @@ class Performance:
                                     columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
         self.midi_df = np.sort(self.midi_df, 0)
 
-        self.orig_tempo = self.midi_data_original.estimate_tempo()
+        notes_set_for_tempo = set([x.start for x in self.midi_data.instruments[0].notes])
+        if len(notes_set_for_tempo) < 20:
+            self.tempo = -1
+        else:
+            self.tempo = self.midi_data.estimate_tempo()
+
+        if len(self.midi_data_original.instruments) > 1:
+            one_instrument_original = self.midi_data_original.instruments[0]
+            for i in range(1, len(self.midi_data_original.instruments)):
+                one_instrument_original.notes += self.midi_data_original.instruments[i].notes
+            one_instrument_original.notes = list(set(one_instrument_original.notes))
+            one_instrument_original.notes.sort(key=lambda x: x.start)
+            self.midi_data_original.instruments = [one_instrument_original]
+
         midi_list_orig = []
         for instrument in self.midi_data_original.instruments:
             for note in instrument.notes:
@@ -43,6 +67,12 @@ class Performance:
         self.original = pd.DataFrame(midi_list_orig,
                                      columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
         self.original = np.sort(self.original, 0)
+
+        notes_set_for_tempo_original = set([x.start for x in self.midi_data_original.instruments[0].notes])
+        if len(notes_set_for_tempo_original) <20:
+            self.orig_tempo = -1
+        else:
+            self.orig_tempo = self.midi_data_original.estimate_tempo()
 
         self.teachers_grades = []  # [[Teacher's Pitch score, Teacher's Tempo score, Teacher's Rhythm score,
         # Teacher's Articulation & Dynamics score, Teacher's next step]] (similar to the order in qualtrics)
@@ -57,21 +87,28 @@ class Performance:
 
     def get_features(self):
         try:
+
             orig = self.original
             stud = self.midi_df
             orig_pitch_list = orig[:, 2]
             stud_pitch_list = stud[:, 2]
             matcher = SequenceMatcher(a=orig_pitch_list, b=stud_pitch_list)
             blocks = matcher.get_matching_blocks()
-            rhythm_diff, velocity_diff, duration_diff, matching_notes = self.supervised_blocks_diff(blocks)
+            rhythm_diff, dynamics_diff, articulation_diff, matching_notes = self.supervised_blocks_diff(blocks)
             if matching_notes == 0:
                 return 0, 0, 0, 0, 0
-            rhythm_feature = 1 - sum(rhythm_diff) / matching_notes
-            velocity_feature = 1 - sum(velocity_diff) / matching_notes
-            duration_feature = 1 - sum(duration_diff) / matching_notes
+
+            rhythm_feature = 1 - (sum(rhythm_diff) / matching_notes)
+            dynamics_feature = 1 - (sum(dynamics_diff) / matching_notes)
+            articulation_feature = 1 - (sum(articulation_diff) / matching_notes)
             pitch_feature = matcher.ratio()
-            tempo_feature = 1 - (min(abs(self.orig_tempo - self.tempo) / self.orig_tempo, 1))
-            return rhythm_feature, velocity_feature, duration_feature, pitch_feature, tempo_feature
+
+            if self.orig_tempo == -1 or self.tempo == -1:
+                tempo_feature = float(1)
+            else:
+                tempo_feature = 1 - (min(abs(self.orig_tempo - self.tempo) / self.orig_tempo, 1))
+
+            return pitch_feature, tempo_feature, rhythm_feature, articulation_feature, dynamics_feature
         except:
             return -1, 0, 0, 0, 0
 
@@ -140,32 +177,40 @@ class Performance:
             matching_notes += block[2]
 
             # match timing of the two matching parts
-            orig_start = block[0]
-            stud_start = block[1]
-            orig_set_time = orig[orig_start, 0]
-            stud_set_time = stud[stud_start, 0]
-            for i in range(orig_start, orig_start + block[2]):
+            orig_index = block[0]
+            stud_index = block[1]
+            orig_set_time = orig[orig_index, 0]
+            stud_set_time = stud[stud_index, 0]
+            for i in range(block[2]):
                 # testing the block's grades of timing and velocity
-                cur_orig_note = np.copy(orig[i])
-                cur_stud_note = np.copy(stud[i])
+                cur_orig_note = np.copy(orig[orig_index])
+                cur_stud_note = np.copy(stud[stud_index])
 
                 # ignore note in further analysis
                 cur_stud_note[2] = 0
                 # calculate grades for difference in notes
                 if i > 0:
-                    prev_orig = orig[i - 1]
-                    prev_stud = stud[i - 1]
+                    prev_orig = orig[orig_index - 1]
+                    prev_stud = stud[stud_index - 1]
 
                     orig_rhythm = cur_orig_note[0] - prev_orig[0]
                     stud_rhythm = cur_stud_note[0] - prev_stud[0]
                 else:
-                    orig_rhythm = orig_set_time
-                    stud_rhythm = stud_set_time
-                rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm + 0.00001))
+                    orig_rhythm = 0
+                    stud_rhythm = 0
+
+                if orig_rhythm == 0:
+                    rhythm_diff.append(0)
+                else:
+                    rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm))
+
                 velocity_diff.append(np.abs(cur_orig_note[3] - cur_stud_note[3]) / cur_orig_note[3])
                 orig_duration = cur_orig_note[1] - cur_orig_note[0]
                 stud_duration = cur_stud_note[1] - cur_stud_note[0]
                 duration_diff.append(np.abs(orig_duration - stud_duration) / orig_duration)
+
+                orig_index += 1
+                stud_index += 1
 
         return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
@@ -174,6 +219,7 @@ class Performance:
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
+        # overall_scores = [teacher[4] for teacher in self.teachers_grades]
         next_step = [teacher[5] for teacher in self.teachers_grades]
 
         if majority_or_avg:
