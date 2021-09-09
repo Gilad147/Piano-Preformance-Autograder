@@ -15,6 +15,7 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
     labeled_data_test = []
 
     train_number = round(len(performances_data) * train_ratio)
+    train_tuple = tuple(random.sample(performances_data, train_number))
 
     teachers = create_fake_teachers(number_of_teachers)
 
@@ -31,23 +32,30 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
                     with os.scandir(basepath + song_path) as performances:
                         for performance in performances:
                             if performance.name != '.DS_Store':
-                                pitch_tech_score, tempo_tech_score, rhythm_tech_score, articulation_tech_score, dynamics_tech_score = Performance_class.Performance(
+                                performance_class = Performance_class.Performance(
                                     path=basepath + song_path + performance.name,
                                     name=song.name,
                                     player_name=performance.name,
-                                    original_path=folder + 'original songs/' + song.name) \
-                                    .get_features()
+                                    original_path=folder + 'original songs/' + song.name)
+                                pitch_tech_score, tempo_tech_score, rhythm_tech_score, articulation_tech_score, \
+                                dynamics_tech_score = performance_class.get_features()
+
                                 if rhythm_tech_score != -1:
-                                    pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade, a_d_teachers_grade, next_step = \
-                                        fake_teachers_feedback(teachers, rhythm_tech_score, velocity_tech_score,
-                                                               articulation_tech_score,
-                                                               pitch_tech_score, tempo_tech_score, majority_or_avg)
+                                    fake_teachers_feedback(performance_class, teachers, pitch_tech_score, tempo_tech_score,
+                                                           rhythm_tech_score, articulation_tech_score,
+                                                           dynamics_tech_score)
+
+                                    performance.give_labels(majority_or_avg=majority_or_avg)
+
+                                    pitch_teachers_grade, tempo_teachers_grade, rhythm_teachers_grade, a_d_teachers_grade, next_step \
+                                        = performance.labels[0], performance.labels[1], performance.labels[2], \
+                                          performance.labels[3], performance.labels[4],
 
                                     if song.name in train_tuple:
                                         labeled_data_train_one_dimension.append(
-                                            [rhythm_tech_score, velocity_tech_score, articulation_tech_score,
-                                             pitch_tech_score, tempo_tech_score,
-                                             pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade,
+                                            [pitch_tech_score, tempo_tech_score, rhythm_tech_score,
+                                             articulation_tech_score, dynamics_tech_score,
+                                             pitch_teachers_grade, tempo_teachers_grade, rhythm_teachers_grade,
                                              a_d_teachers_grade, next_step])
 
                                         labeled_data_train_two_dimensions.append(
@@ -60,14 +68,12 @@ def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, train_ra
 
                                     else:
                                         labeled_data_test.append(
-                                            [rhythm_tech_score, dynamics_tech_score, articulation_tech_score,
-                                             pitch_tech_score, tempo_tech_score,
-                                             pitch_teachers_grade, rhythm_teachers_grade, tempo_teachers_grade,
+                                            [pitch_tech_score, tempo_tech_score, rhythm_tech_score,
+                                             articulation_tech_score, dynamics_tech_score,
+                                             pitch_teachers_grade, tempo_teachers_grade, rhythm_teachers_grade,
                                              a_d_teachers_grade, next_step])
 
     else:
-        train_tuple = tuple(random.sample(performances_data, train_number))
-
         for song in performances_data:
             for performance in song.fake_performances:
 

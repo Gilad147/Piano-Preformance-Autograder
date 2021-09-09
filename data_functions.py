@@ -117,12 +117,16 @@ def processSurveyResults(csv_path, folder_path, teachers):
     return song_dict
 
 
-def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[]):
+def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[], train_tuple=None):
     song_dict = processSurveyResults(csv_path, folder_path, fake_teachers)
     #songs_to_csv(song_dict)
     song_set = set(song_dict.values())
+    song_lst = list(song_set)
+    song_lst.sort(key=lambda x: x.name)
+
     train_number = round(10 * train_ratio)
-    train_tuple = tuple(random.sample(range(0, 10), train_number))
+    if train_tuple is None:
+        train_tuple = tuple(random.sample(range(0, 10), train_number))
     print(train_tuple)
     label_mapping = {0: ["0", "-1"], 3: ["1", "-1"], 1: ["0", "0"], 2: ["0", "1"], 4: ["1", "0"],
                      5: ["1", "1"]}
@@ -138,12 +142,12 @@ def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[]):
             labeled_data_test += song.performances
 
     else:
-        for i, song in enumerate(song_set):
-            print(song.name)
+        for i in range(len(song_lst)):
+            print(song_lst[i].name)
             if i in train_tuple:
-                labeled_data_train_one_dimension += song.performances
+                labeled_data_train_one_dimension += song_lst[i].performances
 
-                for performance in song.performances:
+                for performance in song_lst[i].performances:
                     labeled_data_train_two_dimensions.append(performance.copy())
                     dim1, dim2 = label_mapping[labeled_data_train_two_dimensions[-1][9]][0], \
                                  label_mapping[labeled_data_train_two_dimensions[-1][9]][1]
@@ -152,7 +156,7 @@ def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[]):
                     labeled_data_train_two_dimensions[-1].append(dim2)
 
             else:
-                labeled_data_test += song.performances
+                labeled_data_test += song_lst[i].performances
 
 
     train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
@@ -189,35 +193,36 @@ def plot_data_by_real_teachers(csv_path, folder_path, number_of_fake_teachers):
     final_rhythm = []
     final_a_d = []
 
-    #train_test_real(csv_path, folder_path, True)
+    train_test_real(csv_path, folder_path, True)
 
-    sum_one_dim = [0, 0, 0, 0, 0]
-    for i in range(10):
-        train_one_dimension, train_two_dimensions, test = getDataForSL(csv_path, folder_path, train_ratio=0.9)
-        one_dim_score_i, two_dim_score_i, pitch_score_i, tempo_score_i, rhythm_score_i, a_d_score_i = \
-            auxiliary.trainAndTest(train_one_dimension, train_two_dimensions, test, False)
-        sum_one_dim[0] += one_dim_score_i[0]
-        sum_one_dim[1] += one_dim_score_i[1]
-        sum_one_dim[2] += one_dim_score_i[2]
-        sum_one_dim[3] += one_dim_score_i[3]
-        sum_one_dim[4] += one_dim_score_i[4]
-
-    sum_one_dim[0] /= 10
-    sum_one_dim[1] /= 10
-    sum_one_dim[2] /= 10
-    sum_one_dim[3] /= 10
-    sum_one_dim[4] /= 10
-
-    print(" ")
-    print("###########")
-    print("One dimension results:")
-    print("Random Forest (gini) Score: " + str(sum_one_dim[0]))
-    print("Random Forest (entropy) Score: " + str(sum_one_dim[1]))
-    print("Logistic Regression Score: " + str(sum_one_dim[2]))
-    print("KNN Score: " + str(sum_one_dim[3]))
-    print("Multi-layer Perceptron with Neural Networks score: " + str(sum_one_dim[4]))
-    print("###########")
-    print(" ")
+    # sum_one_dim = [0, 0, 0, 0, 0]
+    # train_tuples = [(2,3,4,5,6,7,8,9), (0,1,4,5,6,7,8,9), (0,1,2,3,6,7,8,9), (0,1,2,3,4,5,8,9), (0,1,2,3,4,5,6,7)]
+    # for tuple_i in train_tuples:
+    #     train_one_dimension, train_two_dimensions, test = getDataForSL(csv_path, folder_path, train_ratio=0.9, train_tuple=tuple_i)
+    #     one_dim_score_i, two_dim_score_i, pitch_score_i, tempo_score_i, rhythm_score_i, a_d_score_i = \
+    #         auxiliary.trainAndTest(train_one_dimension, train_two_dimensions, test, True)
+    #     sum_one_dim[0] += one_dim_score_i[0]
+    #     sum_one_dim[1] += one_dim_score_i[1]
+    #     sum_one_dim[2] += one_dim_score_i[2]
+    #     sum_one_dim[3] += one_dim_score_i[3]
+    #     sum_one_dim[4] += one_dim_score_i[4]
+    #
+    # sum_one_dim[0] /= 5
+    # sum_one_dim[1] /= 5
+    # sum_one_dim[2] /= 5
+    # sum_one_dim[3] /= 5
+    # sum_one_dim[4] /= 5
+    #
+    # print(" ")
+    # print("###########")
+    # print("One dimension results:")
+    # print("Random Forest (gini) Score: " + str(sum_one_dim[0]))
+    # print("Random Forest (entropy) Score: " + str(sum_one_dim[1]))
+    # print("Logistic Regression Score: " + str(sum_one_dim[2]))
+    # print("KNN Score: " + str(sum_one_dim[3]))
+    # print("Multi-layer Perceptron with Neural Networks score: " + str(sum_one_dim[4]))
+    # print("###########")
+    # print(" ")
 
 
 
@@ -287,34 +292,64 @@ def plot_data_by_real_teachers(csv_path, folder_path, number_of_fake_teachers):
 
 def train_test_real(csv_path, folder_path, to_print):
     song_dict = processSurveyResults(csv_path, folder_path, [])
+    del song_dict["Bnu Gesher"] # for test in the end
+    del song_dict["Hatul Al Hagag"] # for test in the end
     song_lst = list(song_dict.keys())
 
-    n_splits = 10
-    n_repeats = 1
-    n_total = n_splits * n_repeats
+    n_splits = 4
+    n_repeats = 50
+    n_total = 28
     #kf = KFold(n_splits=10)
+
+    validation_dict = {}
 
     rkf = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats)
 
-    one_dim_scores = [0, 0, 0, 0, 0]
-    two_dim_scores = [0, 0, 0, 0, 0]
-    pitch_scores = [0, 0, 0, 0, 0]
-    tempo_scores = [0, 0, 0, 0, 0]
-    rhythm_scores = [0, 0, 0, 0, 0]
-    a_d_scores = [0, 0, 0, 0, 0]
+    one_dim_scores = [0, 0, 0, 0, 0, 0, 0]
+    two_dim_scores = [0, 0, 0, 0, 0, 0, 0]
+    pitch_scores = [0, 0, 0, 0, 0, 0, 0]
+    tempo_scores = [0, 0, 0, 0, 0, 0, 0]
+    rhythm_scores = [0, 0, 0, 0, 0, 0, 0]
+    a_d_scores = [0, 0, 0, 0, 0, 0, 0]
 
-    labeled_data_train_one_dimension = []  # explain that in order to prevent data leakage (group leakage), we split *songs!!* randomly into train-test
-    labeled_data_train_two_dimensions = []
-    labeled_data_test = []
+    one_dim_k = []
+    two_dim_k = []
+    pitch_k = []
+    tempo_k = []
+    rhythm_k = []
+    a_d_k = []
 
     label_mapping = {0: ["0", "-1"], 3: ["1", "-1"], 1: ["0", "0"], 2: ["0", "1"], 4: ["1", "0"],
                      5: ["1", "1"]}
     cnt = 0
     for train, test in rkf.split(song_lst):
+        labeled_data_train_one_dimension = []  # explain that in order to prevent data leakage (group leakage), we split *songs!!* randomly into train-test
+        labeled_data_train_two_dimensions = []
+        labeled_data_test = []
+
+        song_test_1 = song_dict[song_lst[test[0]]]
+        song_test_2 = song_dict[song_lst[test[1]]]
+        if song_test_1.name in validation_dict:
+            if song_test_2.name in validation_dict[song_test_1.name]:
+                continue
+            else:
+                validation_dict[song_test_1.name] += (song_test_2.name,)
+                if song_test_2.name in validation_dict:
+                    validation_dict[song_test_2.name] += (song_test_1.name,)
+        else:
+            validation_dict[song_test_1.name] = (song_test_2.name,)
+            if song_test_2.name in validation_dict:
+                validation_dict[song_test_2.name] += (song_test_1.name,)
+            else:
+                validation_dict[song_test_2.name] = (song_test_1.name,)
+
         cnt += 1
+
+        labeled_data_test += song_test_1.performances
+        labeled_data_test += song_test_2.performances
+
         for i in train:
             song_i = song_dict[song_lst[i]]
-            print(song_i.name)
             labeled_data_train_one_dimension += song_i.performances
 
             for performance in song_i.performances:
@@ -324,11 +359,6 @@ def train_test_real(csv_path, folder_path, to_print):
 
                 labeled_data_train_two_dimensions[-1][9] = dim1
                 labeled_data_train_two_dimensions[-1].append(dim2)
-
-        for j in test:
-            song_j = song_dict[song_lst[j]]
-            print(song_j.name)
-            labeled_data_test += song_j.performances
 
         train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
                                            columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
@@ -352,7 +382,16 @@ def train_test_real(csv_path, folder_path, to_print):
         rhythm_scores = [x + y for x, y in zip(rhythm_scores, rhythm_score_i)]
         a_d_scores = [x + y for x, y in zip(a_d_scores, a_d_score_i)]
 
+        one_dim_k.append(one_dim_score_i[5])
+        two_dim_k.append(two_dim_score_i[5])
+        pitch_k.append(pitch_score_i[5])
+        tempo_k.append(tempo_score_i[5])
+        rhythm_k.append(rhythm_score_i[5])
+        a_d_k.append(a_d_score_i[5])
+
         print(str(cnt) + " is finished!")
+        if cnt == n_total:
+            break
 
     one_dim_final = [x / n_total for x in one_dim_scores]
     two_dim_final = [x / n_total for x in two_dim_scores]
@@ -361,6 +400,14 @@ def train_test_real(csv_path, folder_path, to_print):
     rhythm_final = [x / n_total for x in rhythm_scores]
     a_d_final = [x / n_total for x in a_d_scores]
 
+    one_dim_k_final = max(set(one_dim_k), key=one_dim_k.count)
+    two_dim_k_final = max(set(two_dim_k), key=two_dim_k.count)
+    rhythm_k_final = max(set(rhythm_k), key=rhythm_k.count)
+    pitch_k_final = max(set(pitch_k), key=pitch_k.count)
+    tempo_k_final = max(set(tempo_k), key=tempo_k.count)
+    a_d_k_final = max(set(a_d_k), key=a_d_k.count)
+
+    print(validation_dict)
     if to_print:
         print(" ")
         print("###########")
@@ -368,8 +415,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(one_dim_final[0]))
         print("Random Forest (entropy) Score: " + str(one_dim_final[1]))
         print("Logistic Regression Score: " + str(one_dim_final[2]))
-        print("KNN Score: " + str(one_dim_final[3]))
+        print("KNN Score: " + str(one_dim_final[3]) + " with k = " + str(one_dim_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(one_dim_final[4]))
+        print("XGB score: " + str(one_dim_final[6]))
         print("###########")
         print(" ")
 
@@ -379,8 +427,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(two_dim_final[0]))
         print("Random Forest (entropy) Score: " + str(two_dim_final[1]))
         print("Logistic Regression Score: " + str(two_dim_final[2]))
-        print("KNN Score: " + str(two_dim_final[3]))
+        print("KNN Score: " + str(two_dim_final[3]) + " with k = " + str(two_dim_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(two_dim_final[4]))
+        print("XGB score: " + str(two_dim_final[6]))
         print("###########")
         print(" ")
 
@@ -390,8 +439,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(pitch_final[0]))
         print("Random Forest (entropy) Score: " + str(pitch_final[1]))
         print("Logistic Regression Score: " + str(pitch_final[2]))
-        print("KNN Score: " + str(pitch_final[3]))
+        print("KNN Score: " + str(pitch_final[3]) + " with k = " + str(pitch_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(pitch_final[4]))
+        print("XGB score: " + str(pitch_final[6]))
         print("###########")
         print(" ")
 
@@ -401,8 +451,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(tempo_final[0]))
         print("Random Forest (entropy) Score: " + str(tempo_final[1]))
         print("Logistic Regression Score: " + str(tempo_final[2]))
-        print("KNN Score: " + str(tempo_final[3]))
+        print("KNN Score: " + str(tempo_final[3]) + " with k = " + str(tempo_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(tempo_final[4]))
+        print("XGB score: " + str(tempo_final[6]))
         print("###########")
         print(" ")
 
@@ -412,8 +463,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(rhythm_final[0]))
         print("Random Forest (entropy) Score: " + str(rhythm_final[1]))
         print("Logistic Regression Score: " + str(rhythm_final[2]))
-        print("KNN Score: " + str(rhythm_final[3]))
+        print("KNN Score: " + str(rhythm_final[3]) + " with k = " + str(rhythm_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(rhythm_final[4]))
+        print("XGB score: " + str(rhythm_final[6]))
         print("###########")
         print(" ")
 
@@ -423,8 +475,9 @@ def train_test_real(csv_path, folder_path, to_print):
         print("Random Forest (gini) Score: " + str(a_d_final[0]))
         print("Random Forest (entropy) Score: " + str(a_d_final[1]))
         print("Logistic Regression Score: " + str(a_d_final[2]))
-        print("KNN Score: " + str(rhythm_final[3]))
+        print("KNN Score: " + str(rhythm_final[3]) + " with k = " + str(a_d_k_final))
         print("Multi-layer Perceptron with Neural Networks score: " + str(a_d_final[4]))
+        print("XGB score: " + str(a_d_final[6]))
         print("###########")
         print(" ")
 
