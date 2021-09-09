@@ -2,6 +2,7 @@ import bisect
 from datetime import datetime
 import os
 import numpy as np
+from auxiliary import change_midi_file_tempo
 
 
 # functions for numeric grades to written feedback
@@ -50,7 +51,7 @@ def determine_overall_feedback(scores, breakpoints=[0.4, 0.8, 0.9],
     if grades is None:
         grades = ['there is still some work to do',
                   'you did a good job', 'you played very well',
-                                        'it was excellent playing']
+                  'it was excellent playing']
     i = bisect.bisect(breakpoints, scores)
     return grades[i]
 
@@ -86,6 +87,20 @@ def feedback_for_exit_application(grades, recommendation, feedback_path):
     return feedback_message, recommendation_dictionary[recommendation]
 
 
+def find_time_signature(lily_path):
+    file = open(lily_path, 'r')
+    scanner = file.read()
+    index_of_signature = 0
+    for i in range(len(scanner) - 4):
+        if scanner[i: i + 4] == "time":
+            index_of_signature = i + 5
+            break
+    if scanner[index_of_signature] != "3" and scanner[index_of_signature] != 4:
+        return "4/4"
+    file.close()
+    return scanner[index_of_signature: index_of_signature + 3]
+
+
 def reformat_file_by_type(file_name):
     # getting rid of file suffix
     if 'ly' in file_name:
@@ -94,6 +109,8 @@ def reformat_file_by_type(file_name):
         return file_name[:-4]
     if 'midi' in file_name:
         return file_name[:-5]
+    if 'mid' in file_name:
+        return file_name[:-4]
 
 
 def next_piece_by_level(level, song_name):
@@ -136,22 +153,39 @@ def next_piece_by_level(level, song_name):
 
 def find_new_tempo(tempo, recommendation):
     if int(recommendation) == 0:
-        tempo -= 20
+        tempo /= 1.5
         if tempo < 60:
             tempo = 60
     if int(recommendation) == 2:
-        tempo += 20
+        tempo *= 1.5
         if tempo > 160:
             tempo = 160
     tempo = round(tempo)
     return tempo
 
 
+def create_midi_with_new_tempo(original_midi, recommendation, tempo):
+    if int(recommendation) == 0:
+        if tempo == 60:
+            return original_midi
+        else:
+            new_path = reformat_file_by_type(original_midi) + "-Tempo" + str(round(tempo / 1.5)) + ".midi"
+            new_path = change_midi_file_tempo(original_midi, new_path, -0.5)
+    if int(recommendation) == 2:
+        if tempo == 180:
+            return original_midi
+        else:
+            new_path = reformat_file_by_type(original_midi) + "-Tempo" + str(round(tempo * 1.5)) + ".midi"
+            new_path = change_midi_file_tempo(original_midi, new_path, 0.5)
+    return new_path
+
+
 def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo):
     # interprets predicted recommendation for student into the next trial settings
     tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
-        return chart_path, original_midi, song_name, song_level + (tempo,)
+        original_midi = create_midi_with_new_tempo(original_midi, recommendation, tempo)
+        return chart_path, original_midi, song_name, song_level, tempo
     else:
         if int(recommendation) == 4:
             return next_piece_by_level(song_level, song_name) + (tempo,)
@@ -162,7 +196,7 @@ def next_action_by_recommendation(recommendation, chart_path, original_midi, son
                 return next_piece_by_level(song_level + 1, song_name) + (tempo,)
 
 
-def directories(Data_Played, subject_id, song_name):
+def directories(Data_Played, subject_id, song_name, tempo):
     """Saves data played into personal student directory
         Data_Played: the midi events table designed as desired
         :returns:
@@ -182,8 +216,10 @@ def directories(Data_Played, subject_id, song_name):
         now_time = now_time[:-7]
     else:
         now_time = now_time[:-6]
-    completeName = os.path.join(complete_subject_directory, now_time + "-" + song_name + ".txt")
-    midi_path_to_save = os.path.join(complete_subject_directory, now_time + "-" + song_name + ".midi")
+    completeName = os.path.join(complete_subject_directory, now_time + "-"
+                                + song_name + "-Tempo-" + str(tempo) + ".txt")
+    midi_path_to_save = os.path.join(complete_subject_directory, now_time + "-"
+                                     + song_name + "-Tempo-" + str(tempo) + ".midi")
     with open(completeName, 'w') as output:
         for row in Data_Played:
             output.write(str(row) + '\n')

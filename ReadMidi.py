@@ -16,7 +16,7 @@ from Files_Feedback import *
 from Metronome import Metronome
 
 
-def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
+def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, lily_path):
     """Initialize midi trial with given arguments
         chart_path: an absolute path of the chart that is given to student
         original_midi: an absolute path of original midi track of chosen song
@@ -60,7 +60,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
                                         'I advice you to '
                                         + verbal_recommendation + '\n'
-                                                                                      'do you want to keep training?',
+                                                                  'do you want to keep training?',
                                         icon='warning')
         keyboard.close()
         pygame.midi.quit()
@@ -85,7 +85,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
         Data_Played = input_design(Raw_Input[1:].astype('float32'))
         Data_Played[:, 0] = Data_Played[:, 0] / 1000
         Data_Played[:, 1] = Data_Played[:, 1] / 1000
-        midi_path_to_save = directories(Data_Played, subject_id, song_name)
+        midi_path_to_save = directories(Data_Played, subject_id, song_name, tempo)
         np2mid(Data_Played, midi_path_to_save, pretty_midi.PrettyMIDI(original_midi), True)
         performance = Performance(midi_path_to_save, song_name, subject_id, original_midi,
                                   prettyMidiFile_performance=None, prettyMidiFile_original=None)
@@ -95,11 +95,13 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
         # grades = performance.predict_grades(tech_grades)
         # recommendation = performance.predict_reccomendation(tech_grades)
 
-        recommendation = '5'
+        recommendation = '2'
         grades = tech_grades
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
         if stopping:
+            if tempo != 60:
+                os.remove(original_midi)
             for widget in window.winfo_children():
                 widget.destroy()
             window.destroy()
@@ -117,8 +119,12 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
                 next_song_name = song_name
                 next_song_level = song_level
                 next_tempo = tempo
+            next_lily_path = next_chart_path[:-3] + 'ly'
             window.destroy()
-            midi(next_chart_path, next_original_midi, subject_id, next_song_name, next_song_level, next_tempo)
+            midi(next_chart_path, next_original_midi, subject_id, next_song_name,
+                 next_song_level, next_tempo, next_lily_path)
+            if tempo != 60:
+                os.remove(original_midi)
 
     def record(data):
         data[0] = [1, 1, 1, 1]
@@ -152,14 +158,14 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
 
     def place_clear_button():
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
-        path = 'Images for GUI/clear button.png'
+        path = 'Images for GUI/try again button.png'
         complete_path = os.path.join(root_path, path)
-        zoom = 0.2
+        zoom = 0.4
         pixels_x, pixels_y = tuple([int(zoom * x) for x in Image.open(complete_path).size])
         photo2 = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         clear_button = Button(window, text='Clear', image=photo2, command=lambda: clear(Raw_Input))
         clear_button.image = photo2
-        clear_button.place(x=280, y=120)
+        clear_button.place(x=280, y=125)
         return clear_button
 
     def place_note_chart(path):
@@ -173,16 +179,17 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
     def place_recording_clearing_state(r_or_c):
         if r_or_c:
             path = 'Images for GUI/recording state.png'
+            zoom = 0.2
         else:
-            path = 'Images for GUI/clearing state.png'
+            path = 'Images for GUI/hang in there.png'
+            zoom = 0.1
         root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
         complete_path = os.path.join(root_path, path)
-        zoom = 0.2
         pixels_x, pixels_y = tuple([int(zoom * x) for x in Image.open(complete_path).size])
         img = ImageTk.PhotoImage(Image.open(path).resize((pixels_x, pixels_y)))
         img_label = Label(window, image=img)
         img_label.image = img
-        img_label.place(x=450, y=122)
+        img_label.place(x=450, y=140)
         return img_label
 
     stream = pyaudio.PyAudio().open(
@@ -206,14 +213,15 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
     window = Tk()
     window.title("Trial")
     window.attributes("-fullscreen", True)
+    time_signature = find_time_signature(lily_path)
     beats = ["4/4", "6/8", "2/4", "3/4"]
-    metronome = Metronome(window, beats, tempo)
+    metronome = Metronome(window, beats, tempo, time_signature)
     window.resizable(width=FALSE, height=FALSE)
     # window['bg']='#33ABFF'
     fontStyle = tkFont.Font(family="Calibri", size=26)
     myLabel1 = Label(window, text="To start recording press RECORD"
                                   "\nTo save recording and end trial press STOP"
-                                  "\nTo delete recording and start over press CLEAR", font=fontStyle)
+                                  "\nTo delete recording and start over press Try Again", font=fontStyle)
     myLabel1.place(x=0, y=0)
     myLabel2 = Label(window, text="For your convenience you can use a metronome"
                                   "\nThe metronome will guide you to the requested tempo"

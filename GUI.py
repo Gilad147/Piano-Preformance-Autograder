@@ -131,14 +131,15 @@ def play_GUI():
             directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
             original_midi = directory_encoder_midi[chosen_song]
             chart_path = directory_encoder_chart[chosen_song]
+            lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
             if songChosen.get() != "":
                 messagebox.showinfo("Attention",
                                     "For you convenience, 3 buttons are available for use"
                                     "\nRecord - Start recording "
                                     "\nStop - End your trial and save recording"
-                                    "\nReset - Delete recording")
+                                    "\nTry Again - Delete recording")
             window.destroy()
-            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60)
+            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
 
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)

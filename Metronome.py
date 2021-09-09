@@ -30,7 +30,7 @@ class Metronome:
         # Wait for playback to finish before exiting
         play_obj.wait_done()
 
-    def __init__(self, root, beats, tempo):
+    def __init__(self, root, beats, tempo, time_signature):
         """Initiate default values for class and call interface().
         Args:
             root (tkinter.Tk): Main class instance for tkinter.
@@ -39,6 +39,7 @@ class Metronome:
         self.root = root
         self.beats = beats
         self.tempo = tempo
+        self.time_signature = time_signature
 
         self.start = False
         self.bpm = 0
@@ -60,13 +61,13 @@ class Metronome:
         # entry.insert(0, "60")
         # entry.grid(row=0, column=0, padx=5, sticky="E")
 
-        spinbox = Spinbox(frame, width=5, values=self.beats, wrap=True)
-        spinbox.grid(row=0, column=1, sticky="E")
+        # spinbox = Spinbox(frame, width=5, values=self.beats, wrap=True)
+        # spinbox.grid(row=0, column=1, sticky="E")
 
         label_bpm = Label(frame, text="BPM: " + str(self.tempo))
         label_bpm.grid(row=0, column=0, sticky="W")
 
-        label_time = Label(frame, text="Time:")
+        label_time = Label(frame, text="Time: " +str(self.time_signature))
         label_time.grid(row=0, column=1, padx=5, sticky="W")
 
         label_count = Label(frame, textvariable=self.var, font=("Arial", 30))
@@ -74,7 +75,7 @@ class Metronome:
 
         button_start = Button(frame, text="Start", width=10, height=2,
                               command=lambda: self.start_counter(self.tempo,
-                                                                 spinbox))
+                                                                 self.time_signature))
         button_start.grid(row=2, column=0, padx=10, sticky="W")
 
         button_stop = Button(frame, text="Stop", width=10, height=2,
@@ -105,13 +106,13 @@ class Metronome:
         """Stop counter by setting self.start to False."""
         self.start = False
 
-    def counter(self, spinbox):
+    def counter(self, time_signature):
         """Control counter display and audio with calculated time delay.
         Args:
             spinbox (tkinter.Spinbox): tkinter Spinbox widget to get beat.
         """
         if self.start:
-            self.beat = int(spinbox.get()[0])
+            self.beat = int(time_signature[0])
 
             if self.beat == 6:  # 6/8 time
                 self.time = int((60 / (self.bpm / .5) - 0.1) * 1000)
@@ -130,7 +131,7 @@ class Metronome:
                 self.sound(440, 100)
 
             # Calls this method after a certain amount of time (self.time).
-            self.root.after(self.time, lambda: self.counter(spinbox))
+            self.root.after(self.time, lambda: self.counter(time_signature))
 
 
 def main():
@@ -139,7 +140,7 @@ def main():
     root.title("Metronome")
 
     beats = ["4/4", "6/8", "2/4", "3/4"]
-    Metronome(root, beats)
+    Metronome(root, beats, 60, "3/4")
 
     root.mainloop()
 
