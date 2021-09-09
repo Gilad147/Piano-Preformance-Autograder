@@ -106,7 +106,7 @@ def processSurveyResults(csv_path, folder_path, teachers):
         performance_attributes = [pitch_feature, tempo_feature, rhythm_feature, articulation_feature, dynamics_feature,
                                   labels[0], labels[1], labels[2], labels[3], labels[4]]
 
-        #performance_attributes_df = pd.Series(performance_attributes)
+        # performance_attributes_df = pd.Series(performance_attributes)
 
         if song_name not in song_dict:
             new_song = Song_Class.Song(performance["name"])
@@ -119,7 +119,7 @@ def processSurveyResults(csv_path, folder_path, teachers):
 
 def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[], train_tuple=None):
     song_dict = processSurveyResults(csv_path, folder_path, fake_teachers)
-    #songs_to_csv(song_dict)
+    # songs_to_csv(song_dict)
     song_set = set(song_dict.values())
     song_lst = list(song_set)
     song_lst.sort(key=lambda x: x.name)
@@ -157,7 +157,6 @@ def getDataForSL(csv_path, folder_path, train_ratio, fake_teachers=[], train_tup
 
             else:
                 labeled_data_test += song_lst[i].performances
-
 
     train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
                                        columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
@@ -224,8 +223,6 @@ def plot_data_by_real_teachers(csv_path, folder_path, number_of_fake_teachers):
     # print("###########")
     # print(" ")
 
-
-
     # one_dim_scores, two_dim_scores, pitch_scores, tempo_scores, rhythm_scores, a_d_scores = \
     #     auxiliary.trainAndTest(train_one_dim_only_fake, train_two_dim_only_fake, test_train_is_only_fake, True)
 
@@ -239,7 +236,6 @@ def plot_data_by_real_teachers(csv_path, folder_path, number_of_fake_teachers):
     #
     # one_dim_scores, two_dim_scores, pitch_scores, tempo_scores, rhythm_scores, a_d_scores = \
     #     auxiliary.trainAndTest(train_one_dim_only_fake, train_two_dim_only_fake, test_train_is_only_fake, True)
-
 
     # fake_teachers = Automated_teacher.create_fake_teachers(number_of_fake_teachers)
     # train_one_dim_mixed, train_two_dim_mixed, test_mixed = train_is_mixed(csv_path, folder_path, train_ratio=0.7,
@@ -292,14 +288,14 @@ def plot_data_by_real_teachers(csv_path, folder_path, number_of_fake_teachers):
 
 def train_test_real(csv_path, folder_path, to_print):
     song_dict = processSurveyResults(csv_path, folder_path, [])
-    del song_dict["Bnu Gesher"] # for test in the end
-    del song_dict["Hatul Al Hagag"] # for test in the end
+    del song_dict["Bnu Gesher"]  # for test in the end
+    del song_dict["Hatul Al Hagag"]  # for test in the end
     song_lst = list(song_dict.keys())
 
     n_splits = 4
     n_repeats = 50
     n_total = 28
-    #kf = KFold(n_splits=10)
+    # kf = KFold(n_splits=10)
 
     validation_dict = {}
 
@@ -482,8 +478,10 @@ def train_test_real(csv_path, folder_path, to_print):
         print(" ")
 
 
-def train_is_only_fake(songs_path, number_of_performances, create_midi_files_for_fake_performances, number_of_teachers, majority_or_avg, print, csv_path, folder_path):
-    generated_data = auxiliary.generate_random_mistakes_data(songs_path, number_of_performances, create_midi_files_for_fake_performances)
+def train_is_only_fake(songs_path, number_of_performances, create_midi_files_for_fake_performances, number_of_teachers,
+                       majority_or_avg, print, csv_path, folder_path):
+    generated_data = auxiliary.generate_random_mistakes_data(songs_path, number_of_performances,
+                                                             create_midi_files_for_fake_performances)
 
     if create_midi_files_for_fake_performances:
         print("not ready yet")
@@ -515,9 +513,9 @@ def choose_model(model, filename='finalized_next_step_model.pkl'):
 def songs_to_csv(song_dict):
     for song in song_dict.values():
         song_pd = pd.DataFrame(song.performances,
-                     columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
-                              "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
-                              "Teacher's Articulation & Dynamics", 'label'])
+                               columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
+                                        "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                                        "Teacher's Articulation & Dynamics", 'label'])
         song_pd.to_csv(song.name + '.csv')
 
 

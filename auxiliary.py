@@ -18,6 +18,17 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 import xgboost as xgb
 
+def change_midi_file_tempo(original_path, new_path, percentage=0.25):
+    performance = Performance_class.Performance(original_path, " ", " ",
+                                                original_path)
+    if percentage > 0:
+        performance.mistakes_generator("rhythm", noise=percentage)
+        performance.mistakes_generator("duration", noise=percentage, original=False)
+    else:
+        performance.mistakes_generator("duration", noise=percentage)
+        performance.mistakes_generator("rhythm", noise=percentage, original=False)
+    np2mid(performance.midi_df, new_path, None, True)
+    return new_path
 
 def generate_random_mistakes_data(folder, n, create_midi_files):
     basepath = folder + '/'
