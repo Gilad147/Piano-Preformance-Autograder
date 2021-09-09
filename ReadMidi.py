@@ -75,6 +75,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
             if Msg_box_2 == 'no':
                 return
             else:
+                if tempo != 60:
+                    os.remove(original_midi)
                 keyboard.close()
                 pygame.midi.quit()
                 pygame.quit()
@@ -90,6 +92,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         performance = Performance(midi_path_to_save, song_name, subject_id, original_midi,
                                   prettyMidiFile_performance=None, prettyMidiFile_original=None)
         tech_grades = performance.get_features()
+        if tempo != 60:
+            os.remove(original_midi)
         print(tech_grades)
 
         # grades = performance.predict_grades(tech_grades)
@@ -100,8 +104,6 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
         if stopping:
-            if tempo != 60:
-                os.remove(original_midi)
             for widget in window.winfo_children():
                 widget.destroy()
             window.destroy()
@@ -123,8 +125,6 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
             window.destroy()
             midi(next_chart_path, next_original_midi, subject_id, next_song_name,
                  next_song_level, next_tempo, next_lily_path)
-            if tempo != 60:
-                os.remove(original_midi)
 
     def record(data):
         data[0] = [1, 1, 1, 1]

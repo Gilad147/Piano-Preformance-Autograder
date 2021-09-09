@@ -165,26 +165,33 @@ def find_new_tempo(tempo, recommendation):
 
 
 def create_midi_with_new_tempo(original_midi, recommendation, tempo):
+    if tempo != 60:
+        if tempo < 100:
+            original_midi = reformat_file_by_type(original_midi)[:-6] + ".midi"
+        else:
+            original_midi = reformat_file_by_type(original_midi)[:-7] + ".midi"
+    tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) == 0:
         if tempo == 60:
             return original_midi
         else:
-            new_path = reformat_file_by_type(original_midi) + "-Tempo" + str(round(tempo / 1.5)) + ".midi"
+            new_path = reformat_file_by_type(original_midi) + "-BPM" + str(tempo) + ".midi"
             new_path = change_midi_file_tempo(original_midi, new_path, -0.5)
     if int(recommendation) == 2:
-        if tempo == 180:
-            return original_midi
+        if tempo >= 160:
+            new_path = reformat_file_by_type(original_midi) + "-BPM160.midi"
+            new_path = change_midi_file_tempo(original_midi, new_path, 0.3)
         else:
-            new_path = reformat_file_by_type(original_midi) + "-Tempo" + str(round(tempo * 1.5)) + ".midi"
+            new_path = reformat_file_by_type(original_midi) + "-BPM" + str(tempo) + ".midi"
             new_path = change_midi_file_tempo(original_midi, new_path, 0.5)
     return new_path
 
 
 def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo):
     # interprets predicted recommendation for student into the next trial settings
+    original_midi = create_midi_with_new_tempo(original_midi, recommendation, tempo)
     tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
-        original_midi = create_midi_with_new_tempo(original_midi, recommendation, tempo)
         return chart_path, original_midi, song_name, song_level, tempo
     else:
         if int(recommendation) == 4:
@@ -217,9 +224,9 @@ def directories(Data_Played, subject_id, song_name, tempo):
     else:
         now_time = now_time[:-6]
     completeName = os.path.join(complete_subject_directory, now_time + "-"
-                                + song_name + "-Tempo-" + str(tempo) + ".txt")
+                                + song_name + "-BPM-" + str(tempo) + ".txt")
     midi_path_to_save = os.path.join(complete_subject_directory, now_time + "-"
-                                     + song_name + "-Tempo-" + str(tempo) + ".midi")
+                                     + song_name + "-BPM-" + str(tempo) + ".midi")
     with open(completeName, 'w') as output:
         for row in Data_Played:
             output.write(str(row) + '\n')

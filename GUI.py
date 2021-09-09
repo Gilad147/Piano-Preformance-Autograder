@@ -31,6 +31,10 @@ def play_GUI():
     subject_ID = Entry(window, width=15, font=fontStyle)
     subject_ID.place(x=95, y=70)
     save_user_id_arr = []
+    try:
+        os.remove('/Users/orpeleg/PycharmProjects/Piano-Preformance-Autograder/project directory/songs/.DS_Store')
+    except:
+        1
 
     def pathto_dict(path):
         """Scans directory to create a nested list of files
