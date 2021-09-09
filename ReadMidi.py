@@ -95,7 +95,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo):
         # grades = performance.predict_grades(tech_grades)
         # recommendation = performance.predict_reccomendation(tech_grades)
 
-        recommendation = '2'
+        recommendation = '5'
         grades = tech_grades
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)

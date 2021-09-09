@@ -151,15 +151,15 @@ def next_action_by_recommendation(recommendation, chart_path, original_midi, son
     # interprets predicted recommendation for student into the next trial settings
     tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
-        return chart_path, original_midi, song_name, song_level, tempo
+        return chart_path, original_midi, song_name, song_level + (tempo,)
     else:
         if int(recommendation) == 4:
-            return next_piece_by_level(song_level, song_name), tempo
+            return next_piece_by_level(song_level, song_name) + (tempo,)
         else:
             if int(recommendation) == 3:
-                return next_piece_by_level(song_level - 1, song_name), tempo
+                return next_piece_by_level(song_level - 1, song_name) + (tempo,)
             else:
-                return next_piece_by_level(song_level + 1, song_name), tempo
+                return next_piece_by_level(song_level + 1, song_name) + (tempo,)
 
 
 def directories(Data_Played, subject_id, song_name):
