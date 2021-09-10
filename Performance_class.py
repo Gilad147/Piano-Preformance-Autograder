@@ -1,10 +1,21 @@
-import pickle
-
 import pretty_midi
 import pandas as pd
 import numpy as np
 from difflib import SequenceMatcher
+from data_functions import load_models, predict_from_models
 
+def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
+    midi_list = []
+    for instrument in midi_data.instruments:
+        for note in instrument.notes:
+            start = note.start
+            end = note.end
+            pitch = note.pitch
+            velocity = note.velocity
+            midi_list.append([start, end, pitch, velocity, instrument.name])
+    midi_df = pd.DataFrame(midi_list,
+                           columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
+    return midi_df.to_numpy()
 
 class Performance:
     """
@@ -23,7 +34,6 @@ class Performance:
             self.midi_data = prettyMidiFile_performance
             self.midi_data_original = prettyMidiFile_original
 
-        midi_list = []
         if len(self.midi_data.instruments) > 1:
             one_instrument = self.midi_data.instruments[0]
             for i in range(1, len(self.midi_data.instruments)):
@@ -32,17 +42,7 @@ class Performance:
             one_instrument.notes.sort(key=lambda x: x.start)
             self.midi_data.instruments = [one_instrument]
 
-        for instrument in self.midi_data.instruments:
-            for note in instrument.notes:
-                start = note.start
-                end = note.end
-                pitch = note.pitch
-                velocity = note.velocity
-                midi_list.append([start, end, pitch, velocity, instrument.name])
-
-        self.midi_df = pd.DataFrame(midi_list,
-                                    columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-
+        self.midi_df = process_midi_to_numpy(self.midi_data)
 
         notes_set_for_tempo = set([x.start for x in self.midi_data.instruments[0].notes])
         if len(notes_set_for_tempo) < 20:
@@ -58,18 +58,7 @@ class Performance:
             one_instrument_original.notes.sort(key=lambda x: x.start)
             self.midi_data_original.instruments = [one_instrument_original]
 
-        midi_list_orig = []
-        for instrument in self.midi_data_original.instruments:
-            for note in instrument.notes:
-                start = note.start
-                end = note.end
-                pitch = note.pitch
-                velocity = note.velocity
-                midi_list_orig.append([start, end, pitch, velocity, instrument.name])
-
-        self.original = pd.DataFrame(midi_list_orig,
-                                     columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-
+        self.original = process_midi_to_numpy(self.midi_data_original)
 
         notes_set_for_tempo_original = set([x.start for x in self.midi_data_original.instruments[0].notes])
         if len(notes_set_for_tempo_original) < 20:
@@ -82,23 +71,41 @@ class Performance:
 
         self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
 
-    def predict_grades(self):
-        technical_grades = self.get_features()
-        suffix = "_model.pkl"
-        pitch_model = pickle.load(open("pitch" + suffix, 'rb'))
-        pitch_grade = pitch_model.predict(technical_grades[0])
-        tempo_model = pickle.load(open("tempo" + suffix, 'rb'))
-        tempo_grade = tempo_model.predict(technical_grades[1:4])
-        rhythm_model = pickle.load(open("rhythm" + suffix, 'rb'))
-        rhythm_grade = rhythm_model.predict(technical_grades[1:4])
-        a_d_model = pickle.load(open("a_d_" + suffix, 'rb'))
-        a_d_grade = a_d_model.predict(technical_grades[3:])
-        return pitch_grade, tempo_grade, rhythm_grade, a_d_grade
+    def predict_grades(self, technical_grades):
+        ### Pitch
+        x_pitch = pd.DataFrame(technical_grades["Pitch"])
+        models_pitch = load_models("Pitch")
+        pitch_prediction = str(predict_from_models(models_pitch, x_pitch))
 
-    def predict_recommendation(self):
-        technical_grades = self.get_features()
-        model = pickle.load(open("next_step_model.pkl", 'rb'))
-        return model.predict(technical_grades)
+        ### Tempo
+        x_tempo = pd.DataFrame(technical_grades[["Pitch", "Tempo"]])
+        models_tempo = load_models("Tempo")
+        tempo_prediction = str(predict_from_models(models_tempo, x_tempo))
+
+        ### Rhythm
+        x_rhythm = pd.DataFrame(technical_grades["Rhythm"])
+        models_rhythm = load_models("Rhythm")
+        rhythm_prediction = str(predict_from_models(models_rhythm, x_rhythm))
+
+        ### A&D
+        x_a_d = pd.DataFrame(technical_grades[["Pitch", "Articulation", "Dynamics"]])
+        models_a_d = load_models("Articulation & Dynamics")
+        a_d_prediction = str(predict_from_models(models_a_d, x_a_d))
+
+        ### Overall
+        x_overall = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", "Articulation", "Dynamics"]])
+        models_overall = load_models("Overall")
+        overall_prediction = str(predict_from_models(models_overall, x_overall))
+
+        return pitch_prediction, tempo_prediction, rhythm_prediction, a_d_prediction, overall_prediction
+
+    def predict_reccomendation(self, technical_grades):
+        ### one_dim
+        x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", 'Articulation', 'Dynamics']])
+        models_one_dim = load_models("label_one_dim")
+        one_dim_prediction = str(predict_from_models(models_one_dim, x_one_dim))
+
+        return one_dim_prediction
 
     def get_features(self):
         try:
@@ -113,7 +120,7 @@ class Performance:
             if matching_notes == 0:
                 return 0, 0, 0, 0, 0
 
-            rhythm_feature = 1 - (np.average(rhythm_diff) + np.median(rhythm_diff)) / 2
+            rhythm_feature = 1 - (sum(rhythm_diff) / matching_notes)
             dynamics_feature = 1 - (sum(dynamics_diff) / matching_notes)
             articulation_feature = 1 - (sum(articulation_diff) / matching_notes)
             pitch_feature = matcher.ratio()
@@ -206,7 +213,8 @@ class Performance:
                 cur_orig_note = np.copy(orig[orig_index])
                 cur_stud_note = np.copy(stud[stud_index])
 
-
+                # ignore note in further analysis
+                cur_stud_note[2] = 0
                 # calculate grades for difference in notes
                 if i > 0:
                     prev_orig = orig[orig_index - 1]
@@ -236,7 +244,7 @@ class Performance:
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
-        # overall_scores = [teacher[4] for teacher in self.teachers_grades]
+        overall_scores = [teacher[4] for teacher in self.teachers_grades]
         next_step = [teacher[5] for teacher in self.teachers_grades]
 
         if majority_or_avg:
@@ -244,12 +252,15 @@ class Performance:
                       max(set(tempo_scores), key=tempo_scores.count),
                       max(set(rhythm_scores), key=rhythm_scores.count),
                       max(set(a_d_scores), key=a_d_scores.count),
+                      max(set(overall_scores), key=overall_scores.count),
                       max(set(next_step), key=next_step.count)]
         else:
-            labels = [round((sum(list(map(int, pitch_scores))) / len(pitch_scores))),
-                      round((sum(list(map(int, tempo_scores))) / len(tempo_scores))),
-                      round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores))),
-                      round((sum(list(map(int, a_d_scores))) / len(a_d_scores))),
-                      round((sum(list(map(int, next_step))) / len(next_step)))]
+            labels = [(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
+                      (round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
+                      (round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
+                      (round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
+                      (round((sum(list(map(int, overall_scores))) / len(a_d_scores)))),
+                      (round((sum(list(map(int, next_step))) / len(next_step))))]
 
         self.labels = labels
+
