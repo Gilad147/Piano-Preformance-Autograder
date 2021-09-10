@@ -73,7 +73,9 @@ class Performance:
 
 
     def predict_grades(self, technical_grades):
-        technical_grades = pd.DataFrame(technical_grades, columns=["Pitch", "Tempo", "Rhythm", "Articulation", "Dynamics"])
+        technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
+                                                                     "Dynamics"])
+
         ### Pitch
         x_pitch = pd.DataFrame(technical_grades["Pitch"])
         models_pitch = load_models("Pitch")
@@ -102,7 +104,7 @@ class Performance:
         return pitch_prediction, tempo_prediction, rhythm_prediction, a_d_prediction, overall_prediction
 
     def predict_reccomendation(self, technical_grades):
-        technical_grades = pd.DataFrame(technical_grades, columns=["Pitch", "Tempo", "Rhythm", "Articulation",
+        technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
                                                                    "Dynamics"])
         ### one_dim
         x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", 'Articulation', 'Dynamics']])
