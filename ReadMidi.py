@@ -96,6 +96,7 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
             os.remove(original_midi)
         grades = performance.predict_grades(np.asarray(tech_grades).tolist())
         recommendation = performance.predict_reccomendation(np.asarray(tech_grades).tolist())
+        print(grades)
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
         if stopping:

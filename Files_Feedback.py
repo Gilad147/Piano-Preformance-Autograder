@@ -46,7 +46,7 @@ def determine_velocity_feedback(scores, breakpoints=[1, 3],
     return grades[i]
 
 
-def determine_overall_feedback(scores, breakpoints=[1, 2, 3],
+def determine_overall_feedback(scores, breakpoints=[5, 7, 9],
                                grades=None):
     if grades is None:
         grades = ['there is still some work to do',
