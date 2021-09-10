@@ -18,6 +18,20 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 import xgboost as xgb
 
+import pickle
+
+def change_midi_file_tempo(original_path, new_path, percentage=0.10):
+    performance = Performance_class.Performance(original_path, " ", " ",
+                                                original_path)
+    percentage = -percentage
+    if percentage > 0:
+        performance.mistakes_generator("rhythm", noise=percentage)
+        performance.mistakes_generator("duration", noise=percentage, original=False)
+    else:
+        performance.mistakes_generator("duration", noise=percentage)
+        performance.mistakes_generator("rhythm", noise=percentage, original=False)
+    np2mid(performance.midi_df, new_path, None, True)
+    return new_path
 
 def generate_random_mistakes_data(folder, n, create_midi_files):
     basepath = folder + '/'
@@ -95,23 +109,23 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
         return return_performance
 
 
-def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_test, with_tempo, to_print=True):
+def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_test, with_tempo, cnt, chosen_model_name, to_print=True):
     if with_tempo:
-        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                   "Teacher's Articulation & Dynamics", 'label'])
+        x_train = pd.DataFrame(labeled_data_train[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
         y_train = labeled_data_train['label']
 
-        x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                 "Teacher's Articulation & Dynamics", 'label'])
+        x_test = pd.DataFrame(labeled_data_test[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
         y_test = labeled_data_test['label']
 
     else:
-        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                   "Teacher's Articulation & Dynamics", 'Tempo', 'label'])
+        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                                                   "Teacher's Articulation & Dynamics", 'Tempo', "Teacher's Overall",
+                                                   'label'])
         y_train = labeled_data_train['label']
 
-        x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                 "Teacher's Articulation & Dynamics", 'Tempo', 'label'])
+        x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                                                 "Teacher's Articulation & Dynamics", 'Tempo', "Teacher's Overall",
+                                                 'label'])
         y_test = labeled_data_test['label']
 
     ### random forest
@@ -169,40 +183,41 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         print("###########")
         print(" ")
 
+    models = {"rf_gini": model_rf_gini, "rf_entropy": model_rf_entropy, "lr": model_lr, "knn": model_knn,
+              "mlp": model_mlp, "xgb": model_xgb}
 
-
+    chosen_model = models[chosen_model_name]
+    filename = 'models/label_one_dim/model_' + str(cnt) + '.sav'
+    with open(filename, 'wb') as f:
+        pickle.dump(chosen_model, f)
 
     return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score, max_knn_val, xgb_score
 
 
-def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_test, with_tempo, to_print=True):
-    if with_tempo:
-        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                   "Teacher's Articulation & Dynamics",
-                                                   'label dim 1', 'label dim 2'])
-        y_train_1 = labeled_data_train['label dim 1']
-        y_train_2 = labeled_data_train['label dim 2']
+def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_test, with_tempo, cnt,chosen_model_name, to_print=True):
 
-        x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                 "Teacher's Articulation & Dynamics",
-                                                 'label'])
-        y_test = labeled_data_test['label']
+    x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                                               "Teacher's Articulation & Dynamics", "Teacher's Overall",
+                                               'label dim 1', 'label dim 2'])
 
-        # if to_print:
-        #     print("##############")
-        #     print("With Tempo:")
-        #     print("##############")
-    else:
-        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                   "Teacher's Articulation & Dynamics", 'Tempo',
-                                                   'label dim 1', 'label dim 2'])
-        y_train_1 = labeled_data_train['label dim 1']
-        y_train_2 = labeled_data_train['label dim 2']
+    x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                                             "Teacher's Articulation & Dynamics", "Teacher's Overall",
+                                             'label'])
 
-        x_test = labeled_data_test.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
-                                                 "Teacher's Articulation & Dynamics", 'Tempo',
-                                                 'label'])
-        y_test = labeled_data_test['label']
+    if not with_tempo:
+        x_train = x_train.drop(columns=["Tempo"])
+
+        x_test = x_test.drop(columns=["Tempo"])
+
+    y_train_1 = labeled_data_train['label dim 1']
+    y_train_2 = labeled_data_train['label dim 2']
+
+    y_test = labeled_data_test['label']
+
+    label_mapping_1 = {"0": "0", "1": "0", "2": "0", "3": "1", "4": "1", "5":"1"}
+    label_mapping_2 = {"0": "-1", "1": "0", "2": "1", "3": "-1", "4": "0", "5": "1"}
+    y_test_1 = [label_mapping_1[y_test[i]] for i in range(len(y_test))]
+    y_test_2 = [label_mapping_2[y_test[i]] for i in range(len(y_test))]
 
     ### random forest
 
@@ -211,12 +226,16 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
     model_rf_gini_1.fit(x_train, y_train_1)
     model_rf_gini_2.fit(x_train, y_train_2)
     random_forest_gini_score = model_score_two_dim(model_rf_gini_1, model_rf_gini_2, x_test, y_test)
+    random_forest_gini_score_dim_1 = model_score_main(model_rf_gini_1, x_test, y_test_1)
+    random_forest_gini_score_dim_2 = model_score_main(model_rf_gini_2, x_test, y_test_2)
 
     model_rf_entropy_1 = RandomForestClassifier(criterion='entropy')
     model_rf_entropy_2 = RandomForestClassifier(criterion='entropy')
     model_rf_entropy_1.fit(x_train, y_train_1)
     model_rf_entropy_2.fit(x_train, y_train_2)
     random_forest_entropy_score = model_score_two_dim(model_rf_entropy_1, model_rf_entropy_2, x_test, y_test)
+    random_forest_entropy_score_dim_1 = model_score_main(model_rf_entropy_1, x_test, y_test_1)
+    random_forest_entropy_score_dim_2 = model_score_main(model_rf_entropy_2, x_test, y_test_2)
 
     ### logistic regression (classification)
 
@@ -225,19 +244,26 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
     model_lr_1.fit(x_train, y_train_1)
     model_lr_2.fit(x_train, y_train_2)
     logistic_regression_score = model_score_two_dim(model_lr_1, model_lr_2, x_test, y_test)
+    logistic_regression_score_dim_1 = model_score_main(model_lr_1, x_test, y_test_1)
+    logistic_regression_score_dim_2 = model_score_main(model_lr_2, x_test, y_test_2)
 
     ### knn (classification)
-    max_knn_score = 0
-    max_knn_val = 0
+    max_knn_score_dim_1 = 0
+    max_knn_val_dim_1 = 0
     for i in range(4, 7):
         model_knn_1 = KNeighborsClassifier(n_neighbors=i)
         model_knn_2 = KNeighborsClassifier(n_neighbors=i)
         model_knn_1.fit(x_train, y_train_1)
         model_knn_2.fit(x_train, y_train_2)
         knn_score = model_score_two_dim(model_knn_1, model_knn_2, x_test, y_test)
-        if knn_score > max_knn_score:
-            max_knn_score = knn_score
-            max_knn_val = i
+        knn_score_dim_1 = model_score_main(model_knn_1, x_test, y_test_1)
+        knn_score_dim_2 = model_score_main(model_knn_2, x_test, y_test_2)
+        if knn_score_dim_1 > max_knn_score_dim_1:
+            max_knn_score_dim_1 = knn_score_dim_1
+            max_knn_val_dim_1 = i
+        if knn_score_dim_2 > max_knn_score_dim_2:
+            max_knn_score_dim_2 = knn_score_dim_2
+            max_knn_val_dim_2 = i
 
     ### MLP (classification)
     model_mlp_1 = MLPClassifier(max_iter=199)
@@ -245,6 +271,8 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
     model_mlp_1.fit(x_train, y_train_1)
     model_mlp_2.fit(x_train, y_train_2)
     mlp_score = model_score_two_dim(model_mlp_1, model_mlp_2, x_test, y_test)
+    mlp_score_dim_1 = model_score_main(model_mlp_1, x_test, y_test_1)
+    mlp_score_dim_2 = model_score_main(model_mlp_2, x_test, y_test_2)
 
     ### gradient boosting (xgb)
     model_xgb_1 = xgb.XGBClassifier()
@@ -252,6 +280,8 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
     model_xgb_1.fit(x_train, y_train_1)
     model_xgb_2.fit(x_train, y_train_2)
     xgb_score = model_score_two_dim(model_xgb_1, model_xgb_2, x_test, y_test)
+    xgb_score_dim_1 = model_score_main(model_xgb_1, x_test, y_test_1)
+    xgb_score_dim_2 = model_score_main(model_xgb_2, x_test, y_test_2)
 
     if to_print:
         print(" ")
@@ -260,25 +290,45 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
         print("Random Forest (gini) Score: " + str(random_forest_gini_score))
         print("Random Forest (entropy) Score: " + str(random_forest_entropy_score))
         print("Logistic Regression Score: " + str(logistic_regression_score))
-        print("KNN with k = " + str(max_knn_val) + " Score: " + str(max_knn_score))
+        print("KNN with k = " + str(max_knn_val_dim_1) + " Score: " + str(max_knn_score_dim_1))
         print("Multi-layer Perceptron with Neural Networks score: " + str(mlp_score))
         print("XGB score: " + str(xgb_score))
         print("###########")
         print(" ")
 
-    return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score, max_knn_val, xgb_score
+    models = {"rf_gini": [model_rf_gini_1, model_rf_gini_2], "rf_entropy": [model_rf_entropy_1, model_rf_entropy_2],
+              "lr": [model_lr_1, model_lr_2] , "knn": [model_knn_1, model_knn_2],
+              "mlp": [model_mlp_1, model_mlp_2], "xgb": [model_xgb_1, model_xgb_2]}
+
+    chosen_model = models[chosen_model_name]
+    filename_1 = 'models/label_two_dim_1/model_' + str(cnt) + '.sav'
+    with open(filename_1, 'wb') as f:
+        pickle.dump(chosen_model[0], f)
+    filename_2 = 'models/label_two_dim_2/model_' + str(cnt) + '_2.sav'
+    with open(filename_2, 'wb') as f:
+        pickle.dump(chosen_model[1], f)
+
+    return random_forest_gini_score_dim_1, random_forest_entropy_score_dim_1, logistic_regression_score_dim_1, max_knn_score_dim_1, mlp_score_dim_1, max_knn_val_dim_1, xgb_score_dim_1, \
+           random_forest_gini_score_dim_2, random_forest_entropy_score_dim_2, logistic_regression_score_dim_2, max_knn_score_dim_2, mlp_score_dim_2, max_knn_val_dim_2, xgb_score_dim_2
 
 
-def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, to_print=True):
-    if feature_name == "Articulation & Dynamics":
-        x_train = labeled_data_train[['Articulation', 'Dynamics']]
-        x_test = labeled_data_test[['Articulation', 'Dynamics']]
-    # elif feature_name == "Rhythm" or feature_name == "Tempo":
-    #     x_train = labeled_data_train[['Articulation', 'Rhythm', 'Tempo']]
-    #     x_test = labeled_data_test[['Articulation', 'Rhythm', 'Tempo']]
-    else:
-        x_train = pd.DataFrame(labeled_data_train[feature_name])
-        x_test = pd.DataFrame(labeled_data_test[feature_name])
+
+def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, cnt, chosen_model_name, chosen_k, to_print=True):
+    if feature_name == 'Pitch':
+        x_train = pd.DataFrame(labeled_data_train["Pitch"])
+        x_test = pd.DataFrame(labeled_data_test["Pitch"])
+    elif feature_name == 'Tempo':
+        x_train = pd.DataFrame(labeled_data_train[['Pitch', 'Tempo']])
+        x_test = pd.DataFrame(labeled_data_test[['Pitch', 'Tempo']])
+    elif feature_name == 'Rhythm':
+        x_train = pd.DataFrame(labeled_data_train['Rhythm'])
+        x_test = pd.DataFrame(labeled_data_test['Rhythm'])
+    elif feature_name == "Articulation & Dynamics":
+        x_train = pd.DataFrame(labeled_data_train[['Pitch', 'Articulation', 'Dynamics']])
+        x_test = pd.DataFrame(labeled_data_test[['Pitch', 'Articulation', 'Dynamics']])
+    elif feature_name == 'Overall':
+        x_train = pd.DataFrame(labeled_data_train[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
+        x_test = pd.DataFrame(labeled_data_test[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
 
     y_train = labeled_data_train["Teacher's " + feature_name]
     y_test = labeled_data_test["Teacher's " + feature_name]
@@ -300,15 +350,10 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
     logistic_regression_score = model_score_main(model_lr, x_test, y_test)
 
     ### knn (classification)
-    max_knn_score = 0
-    max_knn_val = 0
-    for i in range(4, 7):
-        model_knn = KNeighborsClassifier(n_neighbors=i)
-        model_knn.fit(x_train, y_train)
-        knn_score = model_score_main(model_knn, x_test, y_test)
-        if knn_score > max_knn_score:
-            max_knn_score = knn_score
-            max_knn_val = i
+    max_knn_val = chosen_k
+    model_knn = KNeighborsClassifier(n_neighbors=chosen_k)
+    model_knn.fit(x_train, y_train)
+    max_knn_score = model_score_main(model_knn, x_test, y_test)
 
     ### MLP (classification)
 
@@ -333,6 +378,14 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
         print("XGB score: " + str(xgb_score))
         print("###########")
         print(" ")
+
+    models = {"rf_gini": model_rf_gini, "rf_entropy": model_rf_entropy, "lr": model_lr, "knn": model_knn,
+              "mlp": model_mlp, "xgb": model_xgb}
+
+    chosen_model = models[chosen_model_name]
+    filename = 'models/' + feature_name + '/model_' + str(cnt) + '.sav'
+    with open(filename, 'wb') as f:
+        pickle.dump(chosen_model, f)
 
     return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score, max_knn_val, xgb_score
 
@@ -365,20 +418,25 @@ def model_score_two_dim(model_1, model_2, x_test, y_test):
     return 1 - (err/len(x_test))
 
 
-def trainAndTest(train_one_dim, train_two_dim, test, to_print=False):
-    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, to_print)
-    two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, True, to_print)
-    pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", to_print)
-    tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", to_print)
-    rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", to_print)
-    a_d_scores = test_algorithms_scores(train_one_dim, test, "Articulation & Dynamics", to_print)
-    return one_dim_scores, two_dim_scores, pitch_scores, tempo_scores, rhythm_scores, a_d_scores
+def trainAndTest(train_one_dim, train_two_dim, test, cnt, to_print=False):
+    #one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, cnt, "rf_gini", to_print)
+    #two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, True, cnt, "rf_gini", to_print)
+    #pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", cnt, "xgb", 4, to_print)
+    #tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", cnt, "rf_gini", 4, to_print)
+    rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", cnt, "rf_gini", 4, to_print)
+    #a_d_scores = test_algorithms_scores(train_one_dim, test, "Articulation & Dynamics", cnt, "lr", 4, to_print)
+    #overall_scores = test_algorithms_scores(train_one_dim, test, "Overall", cnt, "rf_entropy", 4, to_print)
+    #return one_dim_scores, [0, 0, 0, 0, 0, 0, 0], pitch_scores, tempo_scores, rhythm_scores, a_d_scores, overall_scores
+    return [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0],  [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], rhythm_scores
+    #return [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]
 
 
 def model_score_main(model, x_test, y_test):
     cnt = 0
-    for i in range(len(x_test)):
+    for i in range(len(y_test)):
         y_hat = int(model.predict(x_test.iloc[i].to_numpy().reshape(1, -1))[0])
         if y_hat == y_test[i]:
             cnt += 1
     return cnt / len(x_test)
+
+

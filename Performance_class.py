@@ -2,12 +2,26 @@ import pretty_midi
 import pandas as pd
 import numpy as np
 from difflib import SequenceMatcher
+from data_functions import load_models, predict_from_models
 
+def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
+    midi_list = []
+    for instrument in midi_data.instruments:
+        for note in instrument.notes:
+            start = note.start
+            end = note.end
+            pitch = note.pitch
+            velocity = note.velocity
+            midi_list.append([start, end, pitch, velocity, instrument.name])
+    midi_df = pd.DataFrame(midi_list,
+                           columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
+    return midi_df.to_numpy()
 
 class Performance:
     """
     note that tempo is not being calculated for songs with <20 different note start times
     """
+
     def __init__(self, path, name, player_name, original_path, prettyMidiFile_performance=None,
                  prettyMidiFile_original=None):
         self.name = name
@@ -20,7 +34,6 @@ class Performance:
             self.midi_data = prettyMidiFile_performance
             self.midi_data_original = prettyMidiFile_original
 
-        midi_list = []
         if len(self.midi_data.instruments) > 1:
             one_instrument = self.midi_data.instruments[0]
             for i in range(1, len(self.midi_data.instruments)):
@@ -29,17 +42,7 @@ class Performance:
             one_instrument.notes.sort(key=lambda x: x.start)
             self.midi_data.instruments = [one_instrument]
 
-        for instrument in self.midi_data.instruments:
-            for note in instrument.notes:
-                start = note.start
-                end = note.end
-                pitch = note.pitch
-                velocity = note.velocity
-                midi_list.append([start, end, pitch, velocity, instrument.name])
-
-        self.midi_df = pd.DataFrame(midi_list,
-                                    columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-        self.midi_df = np.sort(self.midi_df, 0)
+        self.midi_df = process_midi_to_numpy(self.midi_data)
 
         notes_set_for_tempo = set([x.start for x in self.midi_data.instruments[0].notes])
         if len(notes_set_for_tempo) < 20:
@@ -55,21 +58,10 @@ class Performance:
             one_instrument_original.notes.sort(key=lambda x: x.start)
             self.midi_data_original.instruments = [one_instrument_original]
 
-        midi_list_orig = []
-        for instrument in self.midi_data_original.instruments:
-            for note in instrument.notes:
-                start = note.start
-                end = note.end
-                pitch = note.pitch
-                velocity = note.velocity
-                midi_list_orig.append([start, end, pitch, velocity, instrument.name])
-
-        self.original = pd.DataFrame(midi_list_orig,
-                                     columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-        self.original = np.sort(self.original, 0)
+        self.original = process_midi_to_numpy(self.midi_data_original)
 
         notes_set_for_tempo_original = set([x.start for x in self.midi_data_original.instruments[0].notes])
-        if len(notes_set_for_tempo_original) <20:
+        if len(notes_set_for_tempo_original) < 20:
             self.orig_tempo = -1
         else:
             self.orig_tempo = self.midi_data_original.estimate_tempo()
@@ -80,10 +72,40 @@ class Performance:
         self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
 
     def predict_grades(self, technical_grades):
-        return None
+        ### Pitch
+        x_pitch = pd.DataFrame(technical_grades["Pitch"])
+        models_pitch = load_models("Pitch")
+        pitch_prediction = str(predict_from_models(models_pitch, x_pitch))
+
+        ### Tempo
+        x_tempo = pd.DataFrame(technical_grades[["Pitch", "Tempo"]])
+        models_tempo = load_models("Tempo")
+        tempo_prediction = str(predict_from_models(models_tempo, x_tempo))
+
+        ### Rhythm
+        x_rhythm = pd.DataFrame(technical_grades["Rhythm"])
+        models_rhythm = load_models("Rhythm")
+        rhythm_prediction = str(predict_from_models(models_rhythm, x_rhythm))
+
+        ### A&D
+        x_a_d = pd.DataFrame(technical_grades[["Pitch", "Articulation", "Dynamics"]])
+        models_a_d = load_models("Articulation & Dynamics")
+        a_d_prediction = str(predict_from_models(models_a_d, x_a_d))
+
+        ### Overall
+        x_overall = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", "Articulation", "Dynamics"]])
+        models_overall = load_models("Overall")
+        overall_prediction = str(predict_from_models(models_overall, x_overall))
+
+        return pitch_prediction, tempo_prediction, rhythm_prediction, a_d_prediction, overall_prediction
 
     def predict_reccomendation(self, technical_grades):
-        return None
+        ### one_dim
+        x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
+        models_one_dim = load_models("label_one_dim")
+        one_dim_prediction = str(predict_from_models(models_one_dim, x_one_dim))
+
+        return one_dim_prediction
 
     def get_features(self):
         try:
@@ -167,7 +189,7 @@ class Performance:
         velocity_diff = []
         duration_diff = []
         matching_notes = 0
-        for block in blocks:
+        for j, block in enumerate(blocks):
             # end of blocks list
             if block[2] == 0:
                 break
@@ -175,12 +197,17 @@ class Performance:
             if block[2] == 1:
                 continue
             matching_notes += block[2]
-
             # match timing of the two matching parts
             orig_index = block[0]
             stud_index = block[1]
             orig_set_time = orig[orig_index, 0]
             stud_set_time = stud[stud_index, 0]
+            # add rhythm differences between blocks
+            if j != 0:
+                orig_rhythm = orig_set_time - cur_orig_note[0]
+                stud_rhythm = stud_set_time - cur_stud_note[0]
+                rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / orig_rhythm + 0.005)
+
             for i in range(block[2]):
                 # testing the block's grades of timing and velocity
                 cur_orig_note = np.copy(orig[orig_index])
@@ -199,10 +226,8 @@ class Performance:
                     orig_rhythm = 0
                     stud_rhythm = 0
 
-                if orig_rhythm == 0:
-                    rhythm_diff.append(0)
-                else:
-                    rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / (orig_rhythm))
+                if orig_rhythm != 0:
+                    rhythm_diff.append(np.abs(orig_rhythm - stud_rhythm) / orig_rhythm)
 
                 velocity_diff.append(np.abs(cur_orig_note[3] - cur_stud_note[3]) / cur_orig_note[3])
                 orig_duration = cur_orig_note[1] - cur_orig_note[0]
@@ -219,7 +244,7 @@ class Performance:
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
-        # overall_scores = [teacher[4] for teacher in self.teachers_grades]
+        overall_scores = [teacher[4] for teacher in self.teachers_grades]
         next_step = [teacher[5] for teacher in self.teachers_grades]
 
         if majority_or_avg:
@@ -227,12 +252,15 @@ class Performance:
                       max(set(tempo_scores), key=tempo_scores.count),
                       max(set(rhythm_scores), key=rhythm_scores.count),
                       max(set(a_d_scores), key=a_d_scores.count),
+                      max(set(overall_scores), key=overall_scores.count),
                       max(set(next_step), key=next_step.count)]
         else:
-            labels = [str(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
-                      str(round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
-                      str(round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
-                      str(round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
-                      str(round((sum(list(map(int, next_step))) / len(next_step))))]
+            labels = [(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
+                      (round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
+                      (round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
+                      (round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
+                      (round((sum(list(map(int, overall_scores))) / len(a_d_scores)))),
+                      (round((sum(list(map(int, next_step))) / len(next_step))))]
 
         self.labels = labels
+
