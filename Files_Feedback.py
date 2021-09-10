@@ -6,7 +6,7 @@ from auxiliary import change_midi_file_tempo
 
 
 # functions for numeric grades to written feedback
-def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.7],
+def determine_rhythm_feedback(scores, breakpoints=[1, 3],
                               grades=None):
     if grades is None:
         grades = ['you do not pay enough attention to rhythm',
@@ -16,7 +16,7 @@ def determine_rhythm_feedback(scores, breakpoints=[0.4, 0.7],
     return grades[i]
 
 
-def determine_pitch_feedback(scores, breakpoints=[0.4, 0.7],
+def determine_pitch_feedback(scores, breakpoints=[1, 3],
                              grades=None):
     if grades is None:
         grades = ['you have a lot of missing or wrong notes',
@@ -26,17 +26,17 @@ def determine_pitch_feedback(scores, breakpoints=[0.4, 0.7],
     return grades[i]
 
 
-def determine_tempo_feedback(scores, breakpoints=[0.4, 0.7],
+def determine_tempo_feedback(scores, breakpoints=[1, 3],
                              grades=None):
     if grades is None:
         grades = ['your feel of tempo is not consistent',
-                  'try to play with a better feel the tempo',
+                  'try to play with a better feel of tempo',
                   'very steady playing, keep up']
     i = bisect.bisect(breakpoints, scores)
     return grades[i]
 
 
-def determine_velocity_feedback(scores, breakpoints=[0.4, 0.7],
+def determine_velocity_feedback(scores, breakpoints=[1, 3],
                                 grades=None):
     if grades is None:
         grades = ['you are not sensitive enough to notes volume',
@@ -46,7 +46,7 @@ def determine_velocity_feedback(scores, breakpoints=[0.4, 0.7],
     return grades[i]
 
 
-def determine_overall_feedback(scores, breakpoints=[0.4, 0.8, 0.9],
+def determine_overall_feedback(scores, breakpoints=[1, 2, 3],
                                grades=None):
     if grades is None:
         grades = ['there is still some work to do',
@@ -59,21 +59,22 @@ def determine_overall_feedback(scores, breakpoints=[0.4, 0.8, 0.9],
 def save_feedback_to_directory(path, grades, feedback, recommendation):
     text_file = open(path, "w")
     text_file.write("Numeric scores: "
-                    "\nPitch-" + str(grades[3]) +
-                    "\nTempo-" + str(grades[4]) +
-                    "\nRhythm-" + str(grades[0]) +
-                    "\nArticulation-" + str(grades[1]))
-    text_file.write("\n\nVerbal Feedback: \n" + feedback[73:])
+                    "\nPitch-" + str(grades[0]) +
+                    "\nTempo-" + str(grades[1]) +
+                    "\nRhythm-" + str(grades[2]) +
+                    "\nArticulation-" + str(grades[3]))
+    text_file.write("\n\nVerbal Feedback: \n" + feedback)
     text_file.write("Recommendation: " + recommendation)
     text_file.close()
 
 
 def feedback_for_exit_application(grades, recommendation, feedback_path):
-    overall_feedback = determine_overall_feedback(np.average(np.array(grades)))
-    pitching_feedback = determine_pitch_feedback(grades[3])
-    tempo_feedback = determine_tempo_feedback(grades[4])
-    rhythm_feedback = determine_rhythm_feedback(grades[0])
-    velocity_feedback = determine_velocity_feedback(grades[1])
+    grades = np.array(grades, dtype="float")
+    overall_feedback = determine_overall_feedback(grades[4])
+    pitching_feedback = determine_pitch_feedback(grades[0])
+    tempo_feedback = determine_tempo_feedback(grades[1])
+    rhythm_feedback = determine_rhythm_feedback(grades[2])
+    velocity_feedback = determine_velocity_feedback(grades[3])
     recommendation_dictionary = {'0': 'play slower', '1': 'play it again', '2': 'play faster',
                                  '3': 'play a easier piece', '4': 'play another piece',
                                  '5': 'play a harder piece'}
@@ -189,7 +190,8 @@ def create_midi_with_new_tempo(original_midi, recommendation, tempo):
 
 def next_action_by_recommendation(recommendation, chart_path, original_midi, song_name, song_level, tempo):
     # interprets predicted recommendation for student into the next trial settings
-    original_midi = create_midi_with_new_tempo(original_midi, recommendation, tempo)
+    if recommendation == '0' or recommendation == '2':
+        original_midi = create_midi_with_new_tempo(original_midi, recommendation, tempo)
     tempo = find_new_tempo(tempo, recommendation)
     if int(recommendation) < 3:
         return chart_path, original_midi, song_name, song_level, tempo

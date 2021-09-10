@@ -94,13 +94,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         tech_grades = performance.get_features()
         if tempo != 60:
             os.remove(original_midi)
-        print(tech_grades)
-
-        # grades = performance.predict_grades(tech_grades)
-        # recommendation = performance.predict_reccomendation(tech_grades)
-
-        recommendation = '2'
-        grades = tech_grades
+        grades = performance.predict_grades(np.asarray(tech_grades).tolist())
+        recommendation = performance.predict_reccomendation(np.asarray(tech_grades).tolist())
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
         if stopping:
@@ -293,7 +288,6 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
                                     reset_recording = False
                             edited_midi_event = [midi_events[0][1] - time] + midi_events[0][0][:-1]
                             Raw_Input = np.append(Raw_Input, [edited_midi_event], axis=0)
-                            print(midi_events)
                         for event in midi_events:
                             (status, note, vel, _), _ = event
                             if status == 0x80 and note in notes_dict:
