@@ -596,7 +596,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("label_one_dim")
     one_dim_final_score = predict_all(models, x_one_dim, y_one_dim)
-    one_dim_confidence_interval = proportion_confint(count=((1-one_dim_final_score)*6), nobs=6, alpha=0.1)
+    one_dim_confidence_interval = proportion_confint(count=((one_dim_final_score)*6), nobs=6, alpha=0.1)
 
     ### Pitch
     x_pitch = pd.DataFrame(labeled_data["Pitch"])
@@ -604,7 +604,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("Pitch")
     pitch_final_score = predict_all(models, x_pitch, y_pitch)
-    pitch_confidence_interval = proportion_confint(count=((1 - pitch_final_score) * 6), nobs=6, alpha=0.1)
+    pitch_confidence_interval = proportion_confint(count=((pitch_final_score) * 6), nobs=6, alpha=0.1)
 
     ### Tempo
     x_tempo = pd.DataFrame(labeled_data[["Pitch", "Tempo"]])
@@ -612,7 +612,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("Tempo")
     tempo_final_score = predict_all(models, x_tempo, y_tempo)
-    tempo_confidence_interval = proportion_confint(count=((1 - tempo_final_score) * 6), nobs=6, alpha=0.1)
+    tempo_confidence_interval = proportion_confint(count=((tempo_final_score) * 6), nobs=6, alpha=0.1)
 
     ### Rhythm
     x_rhythm = pd.DataFrame(labeled_data["Rhythm"])
@@ -620,7 +620,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("Rhythm")
     rhythm_final_score = predict_all(models, x_rhythm, y_rhythm)
-    rhythm_confidence_interval = proportion_confint(count=((1 - rhythm_final_score) * 6), nobs=6, alpha=0.1)
+    rhythm_confidence_interval = proportion_confint(count=((rhythm_final_score) * 6), nobs=6, alpha=0.1)
 
     ### A&D
     x_a_d = pd.DataFrame(labeled_data[["Pitch", 'Articulation', 'Dynamics']])
@@ -628,7 +628,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("Articulation & Dynamics")
     a_d_final_score = predict_all(models, x_a_d, y_a_d)
-    a_d_confidence_interval = proportion_confint(count=((1 - a_d_final_score) * 6), nobs=6, alpha=0.1)
+    a_d_confidence_interval = proportion_confint(count=((a_d_final_score) * 6), nobs=6, alpha=0.1)
 
     ### Overall
     x_overall = pd.DataFrame(labeled_data[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
@@ -636,7 +636,7 @@ def final_tests(csv_path, folder_path):
 
     models = load_models("Overall")
     overall_final_score = predict_all(models, x_overall, y_overall)
-    overall_confidence_interval = proportion_confint(count=((1 - overall_final_score) * 6), nobs=6, alpha=0.1)
+    overall_confidence_interval = proportion_confint(count=((overall_final_score) * 6), nobs=6, alpha=0.1)
 
     print(" ")
     print("###########")
