@@ -167,7 +167,7 @@ def play_GUI():
             user_id = subject_ID.get()
             save_user_id_arr.append(user_id)
             messagebox.showinfo('Thank you for your cooperation',
-                                'You are transferred to the trial window \n Good luck')
+                                'You are transferred to the trial window \nGood luck')
             second_stage()
         else:
             messagebox.showinfo('ID Error', 'Enter your correct 9 Digit ID')
