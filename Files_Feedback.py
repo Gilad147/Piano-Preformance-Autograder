@@ -176,14 +176,14 @@ def create_midi_with_new_tempo(original_midi, recommendation, tempo):
             return original_midi
         else:
             new_path = reformat_file_by_type(original_midi) + "-BPM" + str(tempo) + ".midi"
-            new_path = change_midi_file_tempo(original_midi, new_path, -0.5)
+            new_path = change_midi_file_tempo(original_midi, new_path, 0.33333333)
     if int(recommendation) == 2:
         if tempo >= 160:
             new_path = reformat_file_by_type(original_midi) + "-BPM160.midi"
-            new_path = change_midi_file_tempo(original_midi, new_path, 0.3)
+            new_path = change_midi_file_tempo(original_midi, new_path, -0.33333333)
         else:
             new_path = reformat_file_by_type(original_midi) + "-BPM" + str(tempo) + ".midi"
-            new_path = change_midi_file_tempo(original_midi, new_path, 0.5)
+            new_path = change_midi_file_tempo(original_midi, new_path, -0.33333333)
     return new_path
 
 
