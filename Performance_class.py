@@ -42,7 +42,7 @@ class Performance:
 
         self.midi_df = pd.DataFrame(midi_list,
                                     columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-        self.midi_df = np.sort(self.midi_df, 0)
+
 
         notes_set_for_tempo = set([x.start for x in self.midi_data.instruments[0].notes])
         if len(notes_set_for_tempo) < 20:
@@ -69,7 +69,7 @@ class Performance:
 
         self.original = pd.DataFrame(midi_list_orig,
                                      columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument']).to_numpy()
-        self.original = np.sort(self.original, 0)
+
 
         notes_set_for_tempo_original = set([x.start for x in self.midi_data_original.instruments[0].notes])
         if len(notes_set_for_tempo_original) < 20:

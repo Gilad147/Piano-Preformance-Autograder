@@ -18,8 +18,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 import xgboost as xgb
-from enum import Enum
-
 
 
 def change_midi_file_tempo(original_path, new_path, percentage=0.25):
