@@ -15,7 +15,6 @@ class Metronome:
 
         # Generate array with seconds*sample_rate steps, ranging between 0 and seconds
         t = np.linspace(0, seconds, seconds * fs, False)
-
         # Generate a 440 Hz sine wave
         note = np.sin(frequency * t * 2 * np.pi)
 
@@ -28,7 +27,7 @@ class Metronome:
         play_obj = sa.play_buffer(audio, 1, 2, fs)
         sa.stop_all()
         # Wait for playback to finish before exiting
-        play_obj.wait_done()
+        # play_obj.wait_done()
 
     def __init__(self, root, beats, tempo, time_signature):
         """Initiate default values for class and call interface().
@@ -100,35 +99,32 @@ class Metronome:
                     self.bpm = 300
 
             self.start = True
-            self.counter(spinbox)
+            self.counter(self.time_signature)
 
     def stop_counter(self):
         """Stop counter by setting self.start to False."""
         self.start = False
 
     def counter(self, time_signature):
-        """Control counter display and audio with calculated time delay.
-        Args:
-            spinbox (tkinter.Spinbox): tkinter Spinbox widget to get beat.
-        """
+        """Control counter display and audio with calculated time delay"""
         if self.start:
             self.beat = int(time_signature[0])
 
             if self.beat == 6:  # 6/8 time
-                self.time = int((60 / (self.bpm / .5) - 0.1) * 1000)
+                self.time = int((60 / (self.bpm / .5)) * 1000 - 1)
             else:
-                self.time = int((60 / self.bpm - 0.1) * 1000)  # Math for delay
+                self.time = int((60 / self.bpm) * 1000 - 1)  # Math for delay
 
             self.count += 1
             self.var.set(self.count)
 
             if self.count == 1:
-                self.sound(880, 100)
+                self.sound(880, 1)
             elif self.count >= self.beat:
                 self.count = 0
-                self.sound(440, 100)
+                self.sound(440, 1)
             else:
-                self.sound(440, 100)
+                self.sound(440, 1)
 
             # Calls this method after a certain amount of time (self.time).
             self.root.after(self.time, lambda: self.counter(time_signature))
@@ -140,7 +136,7 @@ def main():
     root.title("Metronome")
 
     beats = ["4/4", "6/8", "2/4", "3/4"]
-    Metronome(root, beats, 60, "3/4")
+    Metronome(root, beats, 90, "3/4")
 
     root.mainloop()
 
