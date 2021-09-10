@@ -535,7 +535,7 @@ def train_test_real(csv_path, folder_path, to_print):
         print("###########")
         print(" ")
 
-    return overall_final[0], overall_final[1], overall_final[2], overall_final[3], overall_k_final, overall_final[4], overall_final[6]
+    return one_dim_final[0], one_dim_final[1], one_dim_final[2], one_dim_final[3], one_dim_k_final, one_dim_final[4], one_dim_final[6]
 
 
 def train_is_only_fake(songs_path, number_of_performances, create_midi_files_for_fake_performances, number_of_teachers, majority_or_avg, print, csv_path, folder_path):
@@ -591,7 +591,7 @@ def final_tests(csv_path, folder_path):
                                                 "Teacher's Articulation & Dynamics", "Teacher's Overall", 'label'])
 
     ### one_dim
-    x_one_dim = pd.DataFrame(labeled_data[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
+    x_one_dim = pd.DataFrame(labeled_data[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
     y_one_dim = labeled_data["label"]
 
     models = load_models("label_one_dim")
@@ -680,4 +680,3 @@ if __name__ == "__main__":
     #plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", number_of_fake_teachers=10)
     #train_test_real("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", to_print=True)
     final_tests("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
-    #print(proportion_confint(count=5, nobs=6, alpha=0.1))

@@ -101,7 +101,7 @@ class Performance:
 
     def predict_reccomendation(self, technical_grades):
         ### one_dim
-        x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
+        x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", 'Articulation', 'Dynamics']])
         models_one_dim = load_models("label_one_dim")
         one_dim_prediction = str(predict_from_models(models_one_dim, x_one_dim))
 

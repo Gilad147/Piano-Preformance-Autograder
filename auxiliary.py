@@ -111,10 +111,10 @@ def np2mid(np_performance, midfilename, original_midi_file, write_midi_file):
 
 def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_test, with_tempo, cnt, chosen_model_name, to_print=True):
     if with_tempo:
-        x_train = pd.DataFrame(labeled_data_train[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
+        x_train = pd.DataFrame(labeled_data_train[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
         y_train = labeled_data_train['label']
 
-        x_test = pd.DataFrame(labeled_data_test[["Pitch", "Tempo", 'Articulation', 'Dynamics']])
+        x_test = pd.DataFrame(labeled_data_test[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
         y_test = labeled_data_test['label']
 
     else:
@@ -419,15 +419,15 @@ def model_score_two_dim(model_1, model_2, x_test, y_test):
 
 
 def trainAndTest(train_one_dim, train_two_dim, test, cnt, to_print=False):
-    #one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, cnt, "rf_gini", to_print)
+    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, cnt, "xgb", to_print)
     #two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, True, cnt, "rf_gini", to_print)
     #pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", cnt, "xgb", 4, to_print)
     #tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", cnt, "rf_gini", 4, to_print)
-    rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", cnt, "rf_gini", 4, to_print)
+    #rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", cnt, "rf_gini", 4, to_print)
     #a_d_scores = test_algorithms_scores(train_one_dim, test, "Articulation & Dynamics", cnt, "lr", 4, to_print)
     #overall_scores = test_algorithms_scores(train_one_dim, test, "Overall", cnt, "rf_entropy", 4, to_print)
     #return one_dim_scores, [0, 0, 0, 0, 0, 0, 0], pitch_scores, tempo_scores, rhythm_scores, a_d_scores, overall_scores
-    return [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0],  [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], rhythm_scores
+    return one_dim_scores , [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0],  [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]
     #return [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]
 
 
