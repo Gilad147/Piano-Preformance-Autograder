@@ -1,4 +1,5 @@
 import math
+import pickle
 
 import pandas as pd
 
@@ -17,6 +18,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 import xgboost as xgb
+from enum import Enum
+
 
 
 def change_midi_file_tempo(original_path, new_path, percentage=0.25):
@@ -30,6 +33,7 @@ def change_midi_file_tempo(original_path, new_path, percentage=0.25):
         performance.mistakes_generator("rhythm", noise=percentage, original=False)
     np2mid(performance.midi_df, new_path, None, True)
     return new_path
+
 
 def generate_random_mistakes_data(folder, n, create_midi_files):
     basepath = folder + '/'
@@ -155,8 +159,8 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         if knn_score > max_knn_score:
             max_knn_score = knn_score
             max_knn_val = i
-    #plt.plot(knn_x, knn_y)
-    #plt.show()
+    # plt.plot(knn_x, knn_y)
+    # plt.show()
 
     ### MLP (classification)
     model_mlp = MLPClassifier(max_iter=199)
@@ -180,9 +184,6 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
         print("XGB score: " + str(xgb_score))
         print("###########")
         print(" ")
-
-
-
 
     return random_forest_gini_score, random_forest_entropy_score, logistic_regression_score, max_knn_score, mlp_score, max_knn_val, xgb_score
 
@@ -285,9 +286,9 @@ def test_algorithms_scores(labeled_data_train, labeled_data_test, feature_name, 
     if feature_name == "Articulation & Dynamics":
         x_train = labeled_data_train[['Articulation', 'Dynamics']]
         x_test = labeled_data_test[['Articulation', 'Dynamics']]
-    # elif feature_name == "Rhythm" or feature_name == "Tempo":
-    #     x_train = labeled_data_train[['Articulation', 'Rhythm', 'Tempo']]
-    #     x_test = labeled_data_test[['Articulation', 'Rhythm', 'Tempo']]
+    elif feature_name == "Rhythm" or feature_name == "Tempo":
+        x_train = labeled_data_train[['Articulation', 'Rhythm']]
+        x_test = labeled_data_test[['Articulation', 'Rhythm']]
     else:
         x_train = pd.DataFrame(labeled_data_train[feature_name])
         x_test = pd.DataFrame(labeled_data_test[feature_name])
@@ -372,14 +373,40 @@ def model_score_two_dim(model_1, model_2, x_test, y_test):
         test_label = label_mapping_one_to_two[str(int(y_test.iloc[i]))]
 
         distance_i = math.sqrt((math.pow((label_1 - test_label[0]), 2) + math.pow((label_2 - test_label[1]), 2)))
-        err += ((distance_i-min_distance)/(max_distance-min_distance))
+        err += ((distance_i - min_distance) / (max_distance - min_distance))
 
-    return 1 - (err/len(x_test))
+    return 1 - (err / len(x_test))
+
+
+def save_model_to_file(labeled_data_train, feature_name, model):
+    if feature_name == "Next Step":
+        x_train = labeled_data_train.drop(columns=["Teacher's Pitch", "Teacher's Rhythm", "Teacher's Tempo",
+                                                   "Teacher's Articulation & Dynamics", 'Tempo', 'label'])
+        y_train = labeled_data_train['label']
+        feature_name = "next_step"
+    elif feature_name == "Articulation & Dynamics":
+        x_train = labeled_data_train[['Articulation', 'Dynamics']]
+        y_train = labeled_data_train["Teacher's " + feature_name]
+        feature_name = "a_d"
+
+    elif feature_name == "Rhythm" or feature_name == "Tempo":
+        x_train = labeled_data_train[['Articulation', 'Rhythm']]
+        y_train = labeled_data_train["Teacher's " + feature_name]
+        feature_name = str.lower(feature_name)
+
+    else:
+        x_train = pd.DataFrame(labeled_data_train[feature_name])
+        y_train = labeled_data_train["Teacher's " + feature_name]
+        feature_name = str.lower(feature_name)
+    model.fit(x_train, y_train)
+    filename = feature_name + "_model.pkl"
+    with open(filename, 'wb') as file:
+        pickle.dump(model, file)
 
 
 def trainAndTest(train_one_dim, train_two_dim, test, to_print=False):
-    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, to_print)
-    two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, True, to_print)
+    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, False, to_print)
+    two_dim_scores = test_algorithms_next_step_two_dimensions(train_two_dim, test, False, to_print)
     pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", to_print)
     tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", to_print)
     rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", to_print)

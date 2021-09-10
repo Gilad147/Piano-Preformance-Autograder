@@ -368,6 +368,10 @@ def train_test_real(csv_path, folder_path, to_print):
                                                         "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
                                                         "Teacher's Articulation & Dynamics", 'label'])
 
+        data_corr = train_one_dimension.corr()
+        data_corr = data_corr[["Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
+                               "Teacher's Articulation & Dynamics", 'label']][0:5]
+
         one_dim_score_i, two_dim_score_i, pitch_score_i, tempo_score_i, rhythm_score_i, a_d_score_i = \
             auxiliary.trainAndTest(train_one_dimension, train_two_dimensions, test, False)
 
@@ -505,11 +509,6 @@ def train_is_mixed(csv_path, folder_path, train_ratio, teachers):
     return train_one_dim, train_two_dim, test
 
 
-def choose_model(model, filename='finalized_next_step_model.pkl'):
-    with open(filename, 'wb') as file:
-        pickle.dump(model, file)
-
-
 def songs_to_csv(song_dict):
     for song in song_dict.values():
         song_pd = pd.DataFrame(song.performances,
@@ -520,4 +519,4 @@ def songs_to_csv(song_dict):
 
 
 if __name__ == "__main__":
-    plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", number_of_fake_teachers=10)
+    plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", number_of_fake_teachers=0)
