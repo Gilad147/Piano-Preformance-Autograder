@@ -130,20 +130,21 @@ def play_GUI():
 
         def confirm():
             # parsing chosen song and starting midi trial
-            chosen_song = songChosen.get()
-            song_level = find_level_by_songbook(typeChosen.get())
-            directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
-            original_midi = directory_encoder_midi[chosen_song]
-            chart_path = directory_encoder_chart[chosen_song]
-            lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
             if songChosen.get() != "":
-                messagebox.showinfo("Attention",
-                                    "For your convenience, 3 buttons are available for use"
-                                    "\nRecord - Starts recording "
-                                    "\nStop - Ends your trial and save recording"
-                                    "\nTry Again - Deletes recording")
-            window.destroy()
-            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
+                chosen_song = songChosen.get()
+                song_level = find_level_by_songbook(typeChosen.get())
+                directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
+                original_midi = directory_encoder_midi[chosen_song]
+                chart_path = directory_encoder_chart[chosen_song]
+                lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
+                if songChosen.get() != "":
+                    messagebox.showinfo("Attention",
+                                        "For your convenience, 3 buttons are available for use"
+                                        "\nRecord - Starts recording "
+                                        "\nStop - Ends your trial and save recording"
+                                        "\nTry Again - Deletes recording")
+                window.destroy()
+                midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
 
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)
