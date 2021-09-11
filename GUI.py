@@ -138,10 +138,10 @@ def play_GUI():
             lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
             if songChosen.get() != "":
                 messagebox.showinfo("Attention",
-                                    "For you convenience, 3 buttons are available for use"
-                                    "\nRecord - Start recording "
-                                    "\nStop - End your trial and save recording"
-                                    "\nTry Again - Delete recording")
+                                    "For your convenience, 3 buttons are available for use"
+                                    "\nRecord - Starts recording "
+                                    "\nStop - Ends your trial and save recording"
+                                    "\nTry Again - Deletes recording")
             window.destroy()
             midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
 

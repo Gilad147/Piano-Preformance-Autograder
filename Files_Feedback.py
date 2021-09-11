@@ -6,7 +6,7 @@ from auxiliary import change_midi_file_tempo
 
 
 # functions for numeric grades to written feedback
-def determine_rhythm_feedback(scores, breakpoints=[1, 3],
+def determine_rhythm_feedback(scores, breakpoints=[1.5, 3],
                               grades=None):
     if grades is None:
         grades = ['you do not pay enough attention to rhythm',
@@ -16,7 +16,7 @@ def determine_rhythm_feedback(scores, breakpoints=[1, 3],
     return grades[i]
 
 
-def determine_pitch_feedback(scores, breakpoints=[1, 3],
+def determine_pitch_feedback(scores, breakpoints=[1.5, 3],
                              grades=None):
     if grades is None:
         grades = ['you have a lot of missing or wrong notes',
@@ -26,7 +26,7 @@ def determine_pitch_feedback(scores, breakpoints=[1, 3],
     return grades[i]
 
 
-def determine_tempo_feedback(scores, breakpoints=[1, 3],
+def determine_tempo_feedback(scores, breakpoints=[1.5, 3],
                              grades=None):
     if grades is None:
         grades = ['your feel of tempo is not consistent',
@@ -36,7 +36,7 @@ def determine_tempo_feedback(scores, breakpoints=[1, 3],
     return grades[i]
 
 
-def determine_velocity_feedback(scores, breakpoints=[1, 3],
+def determine_velocity_feedback(scores, breakpoints=[1.5, 3],
                                 grades=None):
     if grades is None:
         grades = ['you are not sensitive enough to notes volume',
@@ -57,6 +57,12 @@ def determine_overall_feedback(scores, breakpoints=[5, 7, 9],
 
 
 def save_feedback_to_directory(path, grades, feedback, recommendation):
+    """Saves the student's feedback for the performance
+        path: a text file in the personal student directory
+        grades: the predicted student's grade
+        feedback: the verbal feedback
+        recommendation: the next action recommendation
+    """
     text_file = open(path, "w")
     text_file.write("Numeric scores: "
                     "\nPitch-" + str(grades[0]) +
@@ -69,6 +75,14 @@ def save_feedback_to_directory(path, grades, feedback, recommendation):
 
 
 def feedback_for_exit_application(grades, recommendation, feedback_path):
+    """
+         grades: the grades of performance
+         recommendation: the recommendation for next step
+         feedback_path: the path to save the feedback
+         :returns:
+                feedback_message: verbal feedback
+                recommendation: verbal next step
+    """
     grades = np.array(grades, dtype="float")
     overall_feedback = determine_overall_feedback(grades[4])
     pitching_feedback = determine_pitch_feedback(grades[0])
@@ -76,7 +90,7 @@ def feedback_for_exit_application(grades, recommendation, feedback_path):
     rhythm_feedback = determine_rhythm_feedback(grades[2])
     velocity_feedback = determine_velocity_feedback(grades[3])
     recommendation_dictionary = {'0': 'play slower', '1': 'play it again', '2': 'play faster',
-                                 '3': 'play a easier piece', '4': 'play another piece',
+                                 '3': 'play an easier piece', '4': 'play another piece',
                                  '5': 'play a harder piece'}
     feedback_message = overall_feedback + '\n' \
                        + 'Please pay attention to this technicals: ' + '\n' + '\n' \
@@ -89,6 +103,11 @@ def feedback_for_exit_application(grades, recommendation, feedback_path):
 
 
 def find_time_signature(lily_path):
+    """Find the song's time signature out of the lilypond file
+        lily_path: the lilypond (.ly) file of the song
+        :returns:
+                a string consisting of time signature ("4/4", "3/4" etc.)
+    """
     file = open(lily_path, 'r')
     scanner = file.read()
     index_of_signature = 0
@@ -166,6 +185,13 @@ def find_new_tempo(tempo, recommendation):
 
 
 def create_midi_with_new_tempo(original_midi, recommendation, tempo):
+    """For faster/slower songs, it creates a temporal file with different BPM
+        original_midi: the path for the original midi file
+        recommendation: the next step recommendation
+        tempo: the tempo of the current song (before change)
+        :returns:
+                new path: the path of the new midi file
+    """
     if tempo != 60:
         if tempo < 100:
             original_midi = reformat_file_by_type(original_midi)[:-6] + ".midi"

@@ -23,6 +23,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         subject_id: a 9 digits israeli ID
         song_name: the name of the song without file suffix
         song_level: the level of the songbook the song is taken from
+        tempo: the BPM of the song
+        lily_path: an absolute path of the lilypond file with all song details
     """
     Raw_Input = np.zeros((1, 4))
     Recording_Pushed_Last = False
@@ -52,14 +54,14 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         return New_Input[1:].astype(float)
 
     def exit_application(grades, recommendation, feedback_path):
-        """Handle end of trial and next step determination and set up
-            grades: vector of size 4 with the predicted grades from ML processing
+        """Handles end of trial and next step action
+            grades: vector of size 5 with the predicted grades from ML processing
             recommendation: a string digit stating the predicted recommendation from ML processing
         """
         feedback_message, verbal_recommendation = feedback_for_exit_application(grades, recommendation, feedback_path)
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
                                         'I advice you to '
-                                        + verbal_recommendation + '\n'
+                                        + verbal_recommendation + '\n\n'
                                                                   'do you want to keep training?',
                                         icon='warning')
         keyboard.close()
