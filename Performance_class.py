@@ -4,6 +4,7 @@ import numpy as np
 from difflib import SequenceMatcher
 from data_functions import load_models, predict_from_models
 
+
 def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
     midi_list = []
     for instrument in midi_data.instruments:
@@ -16,6 +17,7 @@ def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
     midi_df = pd.DataFrame(midi_list,
                            columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
     return midi_df.to_numpy()
+
 
 class Performance:
     """
@@ -71,7 +73,6 @@ class Performance:
 
         self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
 
-
     def predict_grades(self, technical_grades):
         technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
                                                                      "Dynamics"])
@@ -105,7 +106,7 @@ class Performance:
 
     def predict_reccomendation(self, technical_grades):
         technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
-                                                                   "Dynamics"])
+                                                                     "Dynamics"])
         ### one_dim
         x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", 'Articulation', 'Dynamics']])
         models_one_dim = load_models("label_one_dim")
@@ -135,7 +136,6 @@ class Performance:
                 tempo_feature = float(1)
             else:
                 tempo_feature = 1 - (min(abs(self.orig_tempo - self.tempo) / self.orig_tempo, 1))
-
             return pitch_feature, tempo_feature, rhythm_feature, articulation_feature, dynamics_feature
         except:
             return -1, 0, 0, 0, 0
@@ -176,7 +176,7 @@ class Performance:
                             note[3] = new_value
         if feature == "pitch":
             for note in new_midi_df:
-                if np.random.rand() < percentage / 2:
+                if np.random.rand() < percentage / 6:
                     note[2] = 1 + note[2]
         self.midi_df = new_midi_df
 
@@ -245,28 +245,17 @@ class Performance:
 
         return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
-    def give_labels(self, majority_or_avg):  # majority_or_avg == true --> majority ; majority_or_avg == false --> avg
+    def give_labels(self):
         pitch_scores = [teacher[0] for teacher in self.teachers_grades]
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
         overall_scores = [teacher[4] for teacher in self.teachers_grades]
         next_step = [teacher[5] for teacher in self.teachers_grades]
-
-        if majority_or_avg:
-            labels = [max(set(pitch_scores), key=pitch_scores.count),
-                      max(set(tempo_scores), key=tempo_scores.count),
-                      max(set(rhythm_scores), key=rhythm_scores.count),
-                      max(set(a_d_scores), key=a_d_scores.count),
-                      max(set(overall_scores), key=overall_scores.count),
-                      max(set(next_step), key=next_step.count)]
-        else:
-            labels = [(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
-                      (round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
-                      (round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
-                      (round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
-                      (round((sum(list(map(int, overall_scores))) / len(a_d_scores)))),
-                      (round((sum(list(map(int, next_step))) / len(next_step))))]
-
-        self.labels = labels
-
+        labels = [max(set(pitch_scores), key=pitch_scores.count),
+                  max(set(tempo_scores), key=tempo_scores.count),
+                  int(round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
+                  int(round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
+                  max(set(overall_scores), key=overall_scores.count),
+                  max(set(next_step), key=next_step.count)]
+        self.labels = np.array(labels, dtype="int32")
