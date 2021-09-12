@@ -1,5 +1,3 @@
-# Metronome - Johnathon Kwisses (Kwistech)
-import os
 from tkinter import *
 import numpy as np
 import simpleaudio as sa
