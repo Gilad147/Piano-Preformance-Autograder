@@ -116,7 +116,9 @@ def play_GUI():
 
         def check_combo():
             # parsing dropdown choice
-            second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
+            second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()),
+                                        key=lambda x: int("".join([i for i in x if i.isdigit()])))
+            # second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
             songChosen['values'] = arrange_items(second_combo_items)
             songChosen.set("")
 
@@ -127,7 +129,7 @@ def play_GUI():
         def find_level_by_songbook(songbook):
             # translating songbook into numeric level
             levels_by_dictionary = {'initial exercises': 0, 'initial exercises2': 1, 'initial exercises3': 2,
-                                    'hebrew Collection': 4}
+                                    'default songs': 4, 'hebrew Collection': 5}
             return levels_by_dictionary[songbook]
 
         def confirm():
