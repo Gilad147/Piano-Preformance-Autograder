@@ -1,7 +1,10 @@
 import pickle
 import random
-from math import comb, ceil
-
+from math import ceil
+try:
+    from math import comb
+except:
+    1
 import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn.metrics
@@ -264,7 +267,11 @@ def train_test_real(csv_path, folder_path, to_print, del_songs=0):
         del song_lst[-1]
     n_splits = 4 - ceil(del_songs / 2)
     n_repeats = 50
-    n_total = comb(8 - del_songs, 2)
+    n_total = 28
+    try:
+        n_total = comb(8 - del_songs, 2)
+    except:
+        1
     # kf = KFold(n_splits=10)
 
     validation_dict = {}
@@ -480,7 +487,11 @@ def songs_to_csv(song_dict):
 
 
 def final_tests(csv_path, folder_path, del_songs=0):
-    n_total = comb(8 - del_songs, 2)
+    n_total = 28
+    try:
+        n_total = comb(8 - del_songs, 2)
+    except:
+        1
     if csv_path == "Fake":
         song_dict = fake_teachers_algorithm(True, 10, folder=folder_path)
     else:

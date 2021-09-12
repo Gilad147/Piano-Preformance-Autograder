@@ -113,12 +113,15 @@ def find_time_signature(lily_path):
     index_of_signature = 0
     for i in range(len(scanner) - 4):
         if scanner[i: i + 4] == "time":
-            index_of_signature = i + 5
+            time_signature = scanner[i + 5: i + 8]
             break
-    if scanner[index_of_signature] != "3" and scanner[index_of_signature] != 4:
+
+    if time_signature[0] != "2" and time_signature[0] != "3" \
+            and time_signature[0] != "4" and time_signature[0] != 6:
         return "4/4"
     file.close()
-    return scanner[index_of_signature: index_of_signature + 3]
+    print(time_signature)
+    return time_signature
 
 
 def reformat_file_by_type(file_name):

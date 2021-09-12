@@ -89,7 +89,7 @@ class Performance:
         tempo_prediction = str(predict_from_models(models_tempo, x_tempo))
 
         ### Rhythm
-        x_rhythm = pd.DataFrame(technical_grades["Pitch", "Rhythm"])
+        x_rhythm = pd.DataFrame(technical_grades[["Pitch", "Rhythm"]])
         models_rhythm = load_models("Rhythm")
         rhythm_prediction = str(predict_from_models(models_rhythm, x_rhythm))
 
