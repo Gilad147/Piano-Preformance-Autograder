@@ -641,6 +641,8 @@ if __name__ == "__main__":
                        one_dim_final_score])
     print(scores)
 
+
+
     '''
     generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', 20, True)
     train_test_real("Fake", "songs/", to_print=True)

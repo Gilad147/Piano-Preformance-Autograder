@@ -2,6 +2,7 @@ import pretty_midi
 import pandas as pd
 import numpy as np
 from difflib import SequenceMatcher
+
 from data_functions import load_models, predict_from_models
 
 
@@ -88,12 +89,12 @@ class Performance:
         tempo_prediction = str(predict_from_models(models_tempo, x_tempo))
 
         ### Rhythm
-        x_rhythm = pd.DataFrame(technical_grades["Rhythm"])
+        x_rhythm = pd.DataFrame(technical_grades["Pitch", "Rhythm"])
         models_rhythm = load_models("Rhythm")
         rhythm_prediction = str(predict_from_models(models_rhythm, x_rhythm))
 
         ### A&D
-        x_a_d = pd.DataFrame(technical_grades[["Pitch", "Articulation", "Dynamics"]])
+        x_a_d = pd.DataFrame(technical_grades[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
         models_a_d = load_models("Articulation & Dynamics")
         a_d_prediction = str(predict_from_models(models_a_d, x_a_d))
 
