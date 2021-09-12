@@ -32,7 +32,9 @@ def play_GUI():
     subject_ID.place(x=95, y=70)
     save_user_id_arr = []
     try:
-        os.remove('/Users/orpeleg/PycharmProjects/Piano-Preformance-Autograder/project directory/songs/.DS_Store')
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
+        to_remove = os.path.join(root_path, "/project directory/songs/.DS_Store")
+        os.remove(to_remove)
     except:
         1
 
