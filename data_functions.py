@@ -1,5 +1,7 @@
 import pickle
 import random
+from math import comb, ceil
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn.metrics
@@ -10,6 +12,8 @@ import auxiliary
 import numpy as np
 from sklearn.model_selection import KFold, RepeatedKFold
 from statsmodels.stats.proportion import proportion_confint
+
+from Automated_teacher import fake_teachers_algorithm
 
 SurveyPerformanceList = [{"name": "HaKova Sheli", "player_name": "Student 12"},
                          {"name": "Bnu Gesher", "player_name": "Student 3"},
@@ -117,71 +121,20 @@ def processSurveyResults(csv_path, folder_path):
     return song_dict
 
 
-def getDataForSL(csv_path, folder_path, train_ratio, train_tuple=None):
-    song_dict = processSurveyResults(csv_path, folder_path)
-    # songs_to_csv(song_dict)
-    song_set = set(song_dict.values())
-    song_lst = list(song_set)
-    song_lst.sort(key=lambda x: x.name)
-
-    train_number = round(10 * train_ratio)
-    if train_tuple is None:
-        train_tuple = tuple(random.sample(range(0, 10), train_number))
-    print(train_tuple)
-    label_mapping = {0: ["0", "-1"], 3: ["1", "-1"], 1: ["0", "0"], 2: ["0", "1"], 4: ["1", "0"],
-                     5: ["1", "1"]}
-
-    labeled_data_train_one_dimension = []
-    labeled_data_train_two_dimensions = []
-    labeled_data_test = []
-
-    if train_ratio == 0:
-        song_lst = list(song_set)
-        song_lst.sort(key=lambda x: x.name)
-        for song in song_lst:
-            labeled_data_test += song.performances
-
-    else:
-        for i in range(len(song_lst)):
-            print(song_lst[i].name)
-            if i in train_tuple:
-                labeled_data_train_one_dimension += song_lst[i].performances
-
-                for performance in song_lst[i].performances:
-                    labeled_data_train_two_dimensions.append(performance.copy())
-                    dim1, dim2 = label_mapping[labeled_data_train_two_dimensions[-1][9]][0], \
-                                 label_mapping[labeled_data_train_two_dimensions[-1][9]][1]
-
-                    labeled_data_train_two_dimensions[-1][9] = dim1
-                    labeled_data_train_two_dimensions[-1].append(dim2)
-
-            else:
-                labeled_data_test += song_lst[i].performances
-
-    train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
-                                       columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
-                                                "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
-                                                "Teacher's Articulation & Dynamics", "Teacher's Overall", 'label'])
-    train_two_dimensions = pd.DataFrame(labeled_data_train_two_dimensions,
-                                        columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
-                                                 "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
-                                                 "Teacher's Articulation & Dynamics", "Teacher's Overall",
-                                                 'label dim 1', 'label dim 2'])
-    test = pd.DataFrame(labeled_data_test, columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
-                                                    "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
-                                                    "Teacher's Articulation & Dynamics", "Teacher's Overall", 'label'])
-
-    return train_one_dimension, train_two_dimensions, test
-
-
 def print_graph(scores, name, index, xlabel):
-    scores_df = pd.DataFrame(scores, columns=["Random Forest (gini)", "Random Forest (entropy)", "Logistic Regression",
-                                              "KNN(max)", "Multi-layer Perceptron"],
+    scores_df = pd.DataFrame(scores, columns=["Pitch", "Tempo", "Rhythm",
+                                              "Articulation & Dynamics", "Overall", 'Next Step'],
                              index=index)
 
-    plt.figure()
-    scores_df.plot(xlabel=xlabel, ylabel="Model score", title=name + " predication scores",
-                   ylim=(0, 1), figsize=(12, 12), grid=True)
+    fig, ax = plt.subplots()
+
+    # hide axes
+    fig.patch.set_visible(False)
+    ax.axis('off')
+    ax.axis('tight')
+    ax.table(cellText=scores_df, colLabels=scores_df.columns, rowLabels=index, loc='center')
+
+    fig.tight_layout()
     plt.show()
 
 
@@ -298,15 +251,20 @@ def plot_data_by_real_teachers(csv_path, folder_path):
     print(" ")
 
 
-def train_test_real(csv_path, folder_path, to_print):
-    song_dict = processSurveyResults(csv_path, folder_path)
+def train_test_real(csv_path, folder_path, to_print, del_songs=0):
+    if csv_path == "Fake":
+        song_dict = fake_teachers_algorithm(True, 10, folder=folder_path)
+    else:
+        song_dict = processSurveyResults(csv_path, folder_path)
     del song_dict["HaKova Sheli"]  # for test in the end
     del song_dict["Shir Eres"]  # for test in the end
     song_lst = list(song_dict.keys())
-
-    n_splits = 4
+    for j in range(del_songs):
+        del song_dict[song_lst[-1]]
+        del song_lst[-1]
+    n_splits = 4 - ceil(del_songs / 2)
     n_repeats = 50
-    n_total = 28
+    n_total = comb(8 - del_songs, 2)
     # kf = KFold(n_splits=10)
 
     validation_dict = {}
@@ -521,8 +479,12 @@ def songs_to_csv(song_dict):
         song_pd.to_csv(song.name + '.csv')
 
 
-def final_tests(csv_path, folder_path):
-    song_dict = processSurveyResults(csv_path, folder_path)
+def final_tests(csv_path, folder_path, del_songs=0):
+    n_total = comb(8 - del_songs, 2)
+    if csv_path == "Fake":
+        song_dict = fake_teachers_algorithm(True, 10, folder=folder_path)
+    else:
+        song_dict = processSurveyResults(csv_path, folder_path)
     song_1 = song_dict["HaKova Sheli"]  # for test in the end
     song_2 = song_dict["Shir Eres"]  # for test in the end
 
@@ -538,7 +500,7 @@ def final_tests(csv_path, folder_path):
     x_one_dim = pd.DataFrame(labeled_data[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
     y_one_dim = labeled_data["label"]
 
-    models = load_models("label_one_dim")
+    models = load_models("label_one_dim", n_total)
     one_dim_final_score = predict_all(models, x_one_dim, y_one_dim)
     one_dim_confidence_interval = proportion_confint(count=(one_dim_final_score * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_one_dim, y_one_dim, labels=['0', '1', '2', '3', '4', '5'])
@@ -546,7 +508,7 @@ def final_tests(csv_path, folder_path):
     x_pitch = pd.DataFrame(labeled_data["Pitch"])
     y_pitch = labeled_data["Teacher's Pitch"]
 
-    models = load_models("Pitch")
+    models = load_models("Pitch", n_total)
     pitch_final_score = predict_all(models, x_pitch, y_pitch)
     pitch_confidence_interval = proportion_confint(count=(pitch_final_score * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_pitch, y_pitch)
@@ -554,7 +516,7 @@ def final_tests(csv_path, folder_path):
     x_tempo = pd.DataFrame(labeled_data[["Pitch", "Tempo"]])
     y_tempo = labeled_data["Teacher's Tempo"]
 
-    models = load_models("Tempo")
+    models = load_models("Tempo", n_total)
     tempo_final_score = predict_all(models, x_tempo, y_tempo)
     tempo_confidence_interval = proportion_confint(count=(tempo_final_score * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_tempo, y_tempo)
@@ -563,7 +525,7 @@ def final_tests(csv_path, folder_path):
     x_rhythm = pd.DataFrame(labeled_data[["Pitch", 'Rhythm']])
     y_rhythm = labeled_data["Teacher's Rhythm"]
 
-    models = load_models("Rhythm")
+    models = load_models("Rhythm", n_total)
     rhythm_final_score = predict_all(models, x_rhythm, y_rhythm, False)
     rhythm_confidence_interval = proportion_confint(count=(rhythm_final_score * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_rhythm, y_rhythm)
@@ -572,7 +534,7 @@ def final_tests(csv_path, folder_path):
     x_a_d = pd.DataFrame(labeled_data[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
     y_a_d = labeled_data["Teacher's Articulation & Dynamics"]
 
-    models = load_models("Articulation & Dynamics")
+    models = load_models("Articulation & Dynamics", n_total)
     a_d_final_score = predict_all(models, x_a_d, y_a_d, False)
     a_d_confidence_interval = proportion_confint(count=((1 - a_d_final_score) * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_a_d, y_a_d)
@@ -581,7 +543,7 @@ def final_tests(csv_path, folder_path):
     x_overall = pd.DataFrame(labeled_data[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
     y_overall = labeled_data["Teacher's Overall"]
 
-    models = load_models("Overall")
+    models = load_models("Overall", n_total)
     overall_final_score = predict_all(models, x_overall, y_overall)
     overall_confidence_interval = proportion_confint(count=((1 - overall_final_score) * 6), nobs=6, alpha=0.1)
     print_confusion_matrix(models, x_overall, y_overall, labels=['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
@@ -601,6 +563,8 @@ def final_tests(csv_path, folder_path):
     print("###########")
     print(" ")
 
+    return pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score
+
 
 def get_correlation_matrix(csv_path, folder_path):
     song_dict = processSurveyResults(csv_path, folder_path)
@@ -619,9 +583,9 @@ def get_correlation_matrix(csv_path, folder_path):
     data_corr.to_csv("correlation_matrix.csv")
 
 
-def load_models(name):
+def load_models(name, num_of_models=29):
     models = []
-    for i in range(1, 29):
+    for i in range(1, num_of_models):
         loaded_model = pickle.load(open('models/' + name + '/model_' + str(i) + '.sav', 'rb'))
         models.append(loaded_model)
     return models
@@ -666,7 +630,21 @@ def predict_from_models(models, x, majority=True):
 
 
 if __name__ == "__main__":
-    # plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", number_of_fake_teachers=10)
-    train_test_real("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", to_print=True)
-    #get_correlation_matrix("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
-    #final_tests("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
+    # plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
+    scores = []
+
+    for del_songs in range(4, -1, -1):
+        train_test_real("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", to_print=True, del_songs=del_songs)
+        pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score = \
+            final_tests("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", del_songs=del_songs)
+        scores.append([pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score,
+                       one_dim_final_score])
+    print(scores)
+
+    '''
+    generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', 20, True)
+    train_test_real("Fake", "songs/", to_print=True)
+    pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score = \
+        final_tests("Fake", "songs/")
+    '''
+    # get_correlation_matrix("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")

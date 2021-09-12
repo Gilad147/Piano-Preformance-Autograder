@@ -45,7 +45,7 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
             if song.is_file() and song.name != '.DS_Store':
                 song_instance = Song_Class.Song(song_name)
                 flawed_performances, original_midi_data = create_random_mistakes(basepath + song.name, song_name, n,
-                                                                                 min_noise=0, max_noise=0.9,
+                                                                                 min_noise=0.2, max_noise=0.9,
                                                                                  min_percentage=0.4, max_percentage=1)
                 if create_midi_files:
                     Path(fake_data_path + song_name).mkdir(exist_ok=True)
@@ -58,7 +58,7 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
                     else:
                         fake_data_performance = np2mid(data.midi_df, song_name, original_midi_data[i],
                                                        write_midi_file=False)
-                    song_instance.fake_performances.append(fake_data_performance)
+                        song_instance.fake_performances.append(fake_data_performance)
             all_data.append(song_instance)
     return all_data
 
@@ -75,7 +75,7 @@ def create_random_mistakes(path, name, n, max_noise, max_percentage, min_noise=0
                                        np.random.uniform(min_percentage, max_percentage), False)
         performance.mistakes_generator("velocity", np.random.uniform(min_noise, max_noise),
                                        np.random.uniform(min_percentage, max_percentage), False)
-        performance.mistakes_generator("pitch", np.random.uniform(min_noise, max_noise),
+        performance.mistakes_generator("pitch", np.random.uniform(min_noise/2, max_noise/4),
                                        np.random.uniform(min_percentage, max_percentage), False)
         flawed_performances.append(performance)
 
@@ -150,7 +150,7 @@ def test_algorithms_next_step_one_dimension(labeled_data_train, labeled_data_tes
     max_knn_val = 0
     knn_x = [x for x in range(3, 7)]
     knn_y = []
-    for i in range(4, 7):
+    for i in range(4, min(len(x_train) + 1, 7)):
         model_knn = KNeighborsClassifier(n_neighbors=i)
         model_knn.fit(x_train, y_train)
         knn_score = model_score_main(model_knn, x_test, y_test)
@@ -315,7 +315,7 @@ def test_algorithms_next_step_two_dimensions(labeled_data_train, labeled_data_te
 
 
 def extract_features_for_model(labeled_data_train, labeled_data_test, feature_name, model_features):
-    if feature_name != "Rhythm" and (feature_name == "Overall" or model_features == "All"):
+    if feature_name == "Overall" or feature_name == "Articulation & Dynamics":
         x_train = pd.DataFrame(labeled_data_train[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
         x_test = pd.DataFrame(labeled_data_test[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
     elif feature_name == "Pitch":
@@ -324,13 +324,6 @@ def extract_features_for_model(labeled_data_train, labeled_data_test, feature_na
     elif model_features == "Timing":
         x_train = pd.DataFrame(labeled_data_train[['Tempo', 'Rhythm', 'Articulation']])
         x_test = pd.DataFrame(labeled_data_test[['Tempo', 'Rhythm', 'Articulation']])
-    elif feature_name == "Articulation & Dynamics":
-        if model_features == "Pitch":
-            x_train = pd.DataFrame(labeled_data_train[['Pitch', 'Articulation', 'Dynamics']])
-            x_test = pd.DataFrame(labeled_data_test[['Pitch', 'Articulation', 'Dynamics']])
-        else:
-            x_train = pd.DataFrame(labeled_data_train[['Articulation', 'Dynamics']])
-            x_test = pd.DataFrame(labeled_data_test[['Articulation', 'Dynamics']])
     elif model_features == "Only":
         x_train = pd.DataFrame(labeled_data_train[[feature_name]])
         x_test = pd.DataFrame(labeled_data_test[[feature_name]])
@@ -437,10 +430,10 @@ def model_score_two_dim(model_1, model_2, x_test, y_test):
 
 
 def trainAndTest(train_one_dim, train_two_dim, test, cnt, to_print=False, model_features="All"):
-    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, cnt, None, to_print)
-    overall_scores = test_algorithms_scores(train_one_dim, test, "Overall", cnt, None, 4, to_print=to_print)
+    one_dim_scores = test_algorithms_next_step_one_dimension(train_one_dim, test, True, cnt, "xgb", to_print)
+    overall_scores = test_algorithms_scores(train_one_dim, test, "Overall", cnt, "rf_entropy", 4, to_print=to_print)
 
-    tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", cnt, None, 4, to_print=to_print,
+    tempo_scores = test_algorithms_scores(train_one_dim, test, "Tempo", cnt, "rf_gini", 4, to_print=to_print,
                                           model_features=model_features)
     rhythm_scores = test_algorithms_scores(train_one_dim, test, "Rhythm", cnt, "rf_gini", 4, to_print=to_print,
                                            model_features=model_features)
@@ -449,7 +442,7 @@ def trainAndTest(train_one_dim, train_two_dim, test, cnt, to_print=False, model_
                                         model_features=model_features)
 
     if model_features == "All" or model_features == "Only":
-        pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", cnt, None, 4, to_print=to_print,
+        pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", cnt, "xgb", 4, to_print=to_print,
                                               model_features=model_features)
     else:
         pitch_scores = test_algorithms_scores(train_one_dim, test, "Pitch", cnt, None, 4, to_print=to_print)
