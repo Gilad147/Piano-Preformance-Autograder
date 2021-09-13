@@ -120,7 +120,6 @@ def find_time_signature(lily_path):
             and time_signature[0] != "4" and time_signature[0] != 6:
         return "4/4"
     file.close()
-    print(time_signature)
     return time_signature
 
 
