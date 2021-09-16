@@ -23,6 +23,8 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         subject_id: a 9 digits israeli ID
         song_name: the name of the song without file suffix
         song_level: the level of the songbook the song is taken from
+        tempo: the BPM of the song
+        lily_path: an absolute path of the lilypond file with all song details
     """
     Raw_Input = np.zeros((1, 4))
     Recording_Pushed_Last = False
@@ -52,14 +54,14 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         return New_Input[1:].astype(float)
 
     def exit_application(grades, recommendation, feedback_path):
-        """Handle end of trial and next step determination and set up
-            grades: vector of size 4 with the predicted grades from ML processing
+        """Handles end of trial and next step action
+            grades: vector of size 5 with the predicted grades from ML processing
             recommendation: a string digit stating the predicted recommendation from ML processing
         """
         feedback_message, verbal_recommendation = feedback_for_exit_application(grades, recommendation, feedback_path)
         MsgBox = messagebox.askquestion('End of Trial', feedback_message + '\n' +
                                         'I advice you to '
-                                        + verbal_recommendation + '\n'
+                                        + verbal_recommendation + '\n\n'
                                                                   'do you want to keep training?',
                                         icon='warning')
         keyboard.close()
@@ -92,15 +94,13 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
         performance = Performance(midi_path_to_save, song_name, subject_id, original_midi,
                                   prettyMidiFile_performance=None, prettyMidiFile_original=None)
         tech_grades = performance.get_features()
+        print(tech_grades)
         if tempo != 60:
             os.remove(original_midi)
-        print(tech_grades)
-
-        # grades = performance.predict_grades(tech_grades)
-        # recommendation = performance.predict_reccomendation(tech_grades)
-
-        recommendation = '2'
-        grades = tech_grades
+        grades = performance.predict_grades(np.asarray(tech_grades).tolist())
+        recommendation = performance.predict_reccomendation(np.asarray(tech_grades).tolist())
+        print(grades)
+        print(recommendation)
         feedback_path = midi_path_to_save[:-5] + "-feedback.txt"
         stopping = exit_application(grades, recommendation, feedback_path)
         if stopping:
@@ -293,7 +293,6 @@ def midi(chart_path, original_midi, subject_id, song_name, song_level, tempo, li
                                     reset_recording = False
                             edited_midi_event = [midi_events[0][1] - time] + midi_events[0][0][:-1]
                             Raw_Input = np.append(Raw_Input, [edited_midi_event], axis=0)
-                            print(midi_events)
                         for event in midi_events:
                             (status, note, vel, _), _ = event
                             if status == 0x80 and note in notes_dict:

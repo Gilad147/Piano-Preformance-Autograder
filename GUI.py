@@ -32,7 +32,9 @@ def play_GUI():
     subject_ID.place(x=95, y=70)
     save_user_id_arr = []
     try:
-        os.remove('/Users/orpeleg/PycharmProjects/Piano-Preformance-Autograder/project directory/songs/.DS_Store')
+        root_path = os.path.dirname(os.path.abspath("Piano-Preformance-Auto"))
+        to_remove = os.path.join(root_path, "/project directory/songs/.DS_Store")
+        os.remove(to_remove)
     except:
         1
 
@@ -114,7 +116,9 @@ def play_GUI():
 
         def check_combo():
             # parsing dropdown choice
-            second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
+            second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()),
+                                        key=lambda x: int("".join([i for i in x if i.isdigit()])))
+            # second_combo_items = sorted(list(directory_tree['project directory']['songs'][typeChosen.get()].keys()))
             songChosen['values'] = arrange_items(second_combo_items)
             songChosen.set("")
 
@@ -125,25 +129,26 @@ def play_GUI():
         def find_level_by_songbook(songbook):
             # translating songbook into numeric level
             levels_by_dictionary = {'initial exercises': 0, 'initial exercises2': 1, 'initial exercises3': 2,
-                                    'hebrew Collection': 4}
+                                    'default songs': 4, 'hebrew Collection': 5}
             return levels_by_dictionary[songbook]
 
         def confirm():
             # parsing chosen song and starting midi trial
-            chosen_song = songChosen.get()
-            song_level = find_level_by_songbook(typeChosen.get())
-            directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
-            original_midi = directory_encoder_midi[chosen_song]
-            chart_path = directory_encoder_chart[chosen_song]
-            lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
             if songChosen.get() != "":
-                messagebox.showinfo("Attention",
-                                    "For you convenience, 3 buttons are available for use"
-                                    "\nRecord - Start recording "
-                                    "\nStop - End your trial and save recording"
-                                    "\nTry Again - Delete recording")
-            window.destroy()
-            midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
+                chosen_song = songChosen.get()
+                song_level = find_level_by_songbook(typeChosen.get())
+                directory_encoder_midi, directory_encoder_chart = create_encoders(directory_tree)
+                original_midi = directory_encoder_midi[chosen_song]
+                chart_path = directory_encoder_chart[chosen_song]
+                lily_path = directory_encoder_chart[chosen_song][:-3] + 'ly'
+                if songChosen.get() != "":
+                    messagebox.showinfo("Attention",
+                                        "For your convenience, 3 buttons are available for use"
+                                        "\nRecord - Starts recording "
+                                        "\nStop - Ends your trial and save recording"
+                                        "\nTry Again - Deletes recording")
+                window.destroy()
+                midi(chart_path, original_midi, save_user_id_arr[0], chosen_song, song_level, 60, lily_path)
 
         ok2 = ttk.Button(window, text="Confirm", command=confirm)
         ok2.place(x=320, y=70)
@@ -167,7 +172,7 @@ def play_GUI():
             user_id = subject_ID.get()
             save_user_id_arr.append(user_id)
             messagebox.showinfo('Thank you for your cooperation',
-                                'You are transferred to the trial window \n Good luck')
+                                'You are transferred to the trial window \nGood luck')
             second_stage()
         else:
             messagebox.showinfo('ID Error', 'Enter your correct 9 Digit ID')
