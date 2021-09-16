@@ -2,20 +2,9 @@ import pretty_midi
 import pandas as pd
 import numpy as np
 from difflib import SequenceMatcher
+
 from data_functions import load_models, predict_from_models
 
-def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
-    midi_list = []
-    for instrument in midi_data.instruments:
-        for note in instrument.notes:
-            start = note.start
-            end = note.end
-            pitch = note.pitch
-            velocity = note.velocity
-            midi_list.append([start, end, pitch, velocity, instrument.name])
-    midi_df = pd.DataFrame(midi_list,
-                           columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
-    return midi_df.to_numpy()
 
 class Performance:
     """
@@ -27,6 +16,11 @@ class Performance:
         self.name = name
         self.player_name = player_name
 
+        self.teachers_grades = []  # [[Teacher's Pitch score, Teacher's Tempo score, Teacher's Rhythm score,
+        # Teacher's Articulation & Dynamics score, Teacher's next step]] (similar to the order in qualtrics)
+
+        self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
+
         if prettyMidiFile_performance is None and prettyMidiFile_original is None:
             self.midi_data = pretty_midi.PrettyMIDI(path)
             self.midi_data_original = pretty_midi.PrettyMIDI(original_path)
@@ -34,43 +28,11 @@ class Performance:
             self.midi_data = prettyMidiFile_performance
             self.midi_data_original = prettyMidiFile_original
 
-        if len(self.midi_data.instruments) > 1:
-            one_instrument = self.midi_data.instruments[0]
-            for i in range(1, len(self.midi_data.instruments)):
-                one_instrument.notes += self.midi_data.instruments[i].notes
-            one_instrument.notes = list(set(one_instrument.notes))
-            one_instrument.notes.sort(key=lambda x: x.start)
-            self.midi_data.instruments = [one_instrument]
+        # Student's performance data
+        extract_performance_data(self, perfect_performance=False)
 
-        self.midi_df = process_midi_to_numpy(self.midi_data)
-
-        notes_set_for_tempo = set([x.start for x in self.midi_data.instruments[0].notes])
-        if len(notes_set_for_tempo) < 20:
-            self.tempo = -1
-        else:
-            self.tempo = self.midi_data.estimate_tempo()
-
-        if len(self.midi_data_original.instruments) > 1:
-            one_instrument_original = self.midi_data_original.instruments[0]
-            for i in range(1, len(self.midi_data_original.instruments)):
-                one_instrument_original.notes += self.midi_data_original.instruments[i].notes
-            one_instrument_original.notes = list(set(one_instrument_original.notes))
-            one_instrument_original.notes.sort(key=lambda x: x.start)
-            self.midi_data_original.instruments = [one_instrument_original]
-
-        self.original = process_midi_to_numpy(self.midi_data_original)
-
-        notes_set_for_tempo_original = set([x.start for x in self.midi_data_original.instruments[0].notes])
-        if len(notes_set_for_tempo_original) < 20:
-            self.orig_tempo = -1
-        else:
-            self.orig_tempo = self.midi_data_original.estimate_tempo()
-
-        self.teachers_grades = []  # [[Teacher's Pitch score, Teacher's Tempo score, Teacher's Rhythm score,
-        # Teacher's Articulation & Dynamics score, Teacher's next step]] (similar to the order in qualtrics)
-
-        self.labels = []  # [Pitch, Tempo, Rhythm, Articulation & Dynamics, Next step]
-
+        # "Perfect" performance data
+        extract_performance_data(self, perfect_performance=True)
 
     def predict_grades(self, technical_grades):
         technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
@@ -87,12 +49,12 @@ class Performance:
         tempo_prediction = str(predict_from_models(models_tempo, x_tempo))
 
         ### Rhythm
-        x_rhythm = pd.DataFrame(technical_grades["Rhythm"])
+        x_rhythm = pd.DataFrame(technical_grades[["Pitch", "Rhythm"]])
         models_rhythm = load_models("Rhythm")
         rhythm_prediction = str(predict_from_models(models_rhythm, x_rhythm))
 
         ### A&D
-        x_a_d = pd.DataFrame(technical_grades[["Pitch", "Articulation", "Dynamics"]])
+        x_a_d = pd.DataFrame(technical_grades[['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics']])
         models_a_d = load_models("Articulation & Dynamics")
         a_d_prediction = str(predict_from_models(models_a_d, x_a_d))
 
@@ -105,7 +67,7 @@ class Performance:
 
     def predict_reccomendation(self, technical_grades):
         technical_grades = pd.DataFrame([technical_grades], columns=["Pitch", "Tempo", "Rhythm", "Articulation",
-                                                                   "Dynamics"])
+                                                                     "Dynamics"])
         ### one_dim
         x_one_dim = pd.DataFrame(technical_grades[["Pitch", "Tempo", "Rhythm", 'Articulation', 'Dynamics']])
         models_one_dim = load_models("label_one_dim")
@@ -115,8 +77,7 @@ class Performance:
 
     def get_features(self):
         try:
-
-            orig = self.original
+            orig = self.midi_df_original
             stud = self.midi_df
             orig_pitch_list = orig[:, 2]
             stud_pitch_list = stud[:, 2]
@@ -131,54 +92,13 @@ class Performance:
             articulation_feature = 1 - (sum(articulation_diff) / matching_notes)
             pitch_feature = matcher.ratio()
 
-            if self.orig_tempo == -1 or self.tempo == -1:
+            if self.tempo_original == -1 or self.tempo == -1:
                 tempo_feature = float(1)
             else:
-                tempo_feature = 1 - (min(abs(self.orig_tempo - self.tempo) / self.orig_tempo, 1))
-
+                tempo_feature = 1 - (min(abs(self.tempo_original - self.tempo) / self.tempo_original, 1))
             return pitch_feature, tempo_feature, rhythm_feature, articulation_feature, dynamics_feature
         except:
             return -1, 0, 0, 0, 0
-
-    def mistakes_generator(self, feature, noise=0.75, percentage=1, original=True):
-        if original:
-            new_midi_df = np.copy(self.original)
-            reference = self.original
-        else:
-            new_midi_df = np.copy(self.midi_df)
-            reference = self.midi_df
-        if noise > 1 or noise < 0 or percentage < 0 or percentage > 1:
-            print("Input values should be between 0 and 1")
-
-        if feature == "rhythm":
-            accumulation_mistake = 0
-            for i, note in enumerate(new_midi_df):
-                if np.random.rand() < percentage and i > 0:
-                    accumulation_mistake += noise * (note[0] - reference[i - 1][0])
-                note[0] += accumulation_mistake
-                note[1] += accumulation_mistake
-        if feature == "duration":
-            for i, note in enumerate(new_midi_df):
-                if np.random.rand() < percentage:
-                    if i + 1 == new_midi_df.shape[0] or note[1] + (note[1] - note[0]) * noise < reference[i + 1][0]:
-                        note[1] += (note[1] - note[0]) * noise
-                    else:
-                        note[1] = reference[i + 1][0] - 0.005
-        if feature == "velocity":
-            for note in new_midi_df:
-                if np.random.rand() < percentage:
-                    new_value = note[3] * (1 + noise / 2)
-                    if 0 <= new_value <= 127:
-                        note[3] = new_value
-                    else:
-                        new_value = note[3] * (1 - noise / 2)
-                        if 0 <= new_value <= 127:
-                            note[3] = new_value
-        if feature == "pitch":
-            for note in new_midi_df:
-                if np.random.rand() < percentage / 2:
-                    note[2] = 1 + note[2]
-        self.midi_df = new_midi_df
 
     def supervised_blocks_diff(self, blocks):
         """
@@ -189,7 +109,7 @@ class Performance:
 
         # technical features: tempo, velocity, note duration
 
-        orig = self.original
+        orig = self.midi_df_original
         stud = self.midi_df
         rhythm_diff = []
         velocity_diff = []
@@ -245,28 +165,60 @@ class Performance:
 
         return rhythm_diff, velocity_diff, duration_diff, matching_notes
 
-    def give_labels(self, majority_or_avg):  # majority_or_avg == true --> majority ; majority_or_avg == false --> avg
+    def give_labels(self):
         pitch_scores = [teacher[0] for teacher in self.teachers_grades]
         tempo_scores = [teacher[1] for teacher in self.teachers_grades]
         rhythm_scores = [teacher[2] for teacher in self.teachers_grades]
         a_d_scores = [teacher[3] for teacher in self.teachers_grades]
         overall_scores = [teacher[4] for teacher in self.teachers_grades]
         next_step = [teacher[5] for teacher in self.teachers_grades]
+        labels = [max(set(pitch_scores), key=pitch_scores.count),
+                  max(set(tempo_scores), key=tempo_scores.count),
+                  int(round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
+                  int(round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
+                  max(set(overall_scores), key=overall_scores.count),
+                  max(set(next_step), key=next_step.count)]
+        self.labels = np.array(labels, dtype="int32")
 
-        if majority_or_avg:
-            labels = [max(set(pitch_scores), key=pitch_scores.count),
-                      max(set(tempo_scores), key=tempo_scores.count),
-                      max(set(rhythm_scores), key=rhythm_scores.count),
-                      max(set(a_d_scores), key=a_d_scores.count),
-                      max(set(overall_scores), key=overall_scores.count),
-                      max(set(next_step), key=next_step.count)]
+
+def process_midi_to_numpy(midi_data: pretty_midi.PrettyMIDI):
+    midi_list = []
+    for instrument in midi_data.instruments:
+        for note in instrument.notes:
+            start = note.start
+            end = note.end
+            pitch = note.pitch
+            velocity = note.velocity
+            midi_list.append([start, end, pitch, velocity, instrument.name])
+    midi_df = pd.DataFrame(midi_list,
+                           columns=['Start', 'End', 'Pitch', 'Velocity', 'Instrument'])
+    return midi_df.to_numpy()
+
+
+def extract_performance_data(performance, perfect_performance):
+    if not perfect_performance:
+        midi_data = performance.midi_data
+        performance.midi_df = process_midi_to_numpy(midi_data)
+    else:
+        midi_data = performance.midi_data_original
+        performance.midi_df_original = process_midi_to_numpy(midi_data)
+
+    if len(midi_data.instruments) > 1:
+        one_instrument = midi_data.instruments[0]
+        for i in range(1, len(midi_data.instruments)):
+            one_instrument.notes += midi_data.instruments[i].notes
+        one_instrument.notes = list(set(one_instrument.notes))
+        one_instrument.notes.sort(key=lambda x: x.start)
+        midi_data.instruments = [one_instrument]
+
+    notes_set_for_tempo = set([x.start for x in midi_data.instruments[0].notes])
+    if len(notes_set_for_tempo) < 20:
+        if not perfect_performance:
+            performance.tempo = -1
         else:
-            labels = [(round((sum(list(map(int, pitch_scores))) / len(pitch_scores)))),
-                      (round((sum(list(map(int, tempo_scores))) / len(tempo_scores)))),
-                      (round((sum(list(map(int, rhythm_scores))) / len(rhythm_scores)))),
-                      (round((sum(list(map(int, a_d_scores))) / len(a_d_scores)))),
-                      (round((sum(list(map(int, overall_scores))) / len(a_d_scores)))),
-                      (round((sum(list(map(int, next_step))) / len(next_step))))]
-
-        self.labels = labels
-
+            performance.tempo_original = -1
+    else:
+        if not perfect_performance:
+            performance.tempo = midi_data.estimate_tempo()
+        else:
+            performance.tempo_original = midi_data.estimate_tempo()
