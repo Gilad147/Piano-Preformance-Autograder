@@ -1,7 +1,6 @@
 import pickle
-import random
 import testing_algorithms
-from math import ceil
+
 try:
     from math import comb
 except:
@@ -113,8 +112,6 @@ def processSurveyResults(csv_path, folder_path):
         performance_attributes = [pitch_feature, tempo_feature, rhythm_feature, articulation_feature, dynamics_feature,
                                   labels[0], labels[1], labels[2], labels[3], labels[4], labels[5]]
 
-        # performance_attributes_df = pd.Series(performance_attributes)
-
         if song_name not in song_dict:
             new_song = Song_Class.Song(performance["name"])
             song_dict[song_name] = new_song
@@ -124,24 +121,7 @@ def processSurveyResults(csv_path, folder_path):
     return song_dict
 
 
-def print_graph(scores, name, index, xlabel):
-    scores_df = pd.DataFrame(scores, columns=["Pitch", "Tempo", "Rhythm",
-                                              "Articulation & Dynamics", "Overall", 'Next Step'],
-                             index=index)
-
-    fig, ax = plt.subplots()
-
-    # hide axes
-    fig.patch.set_visible(False)
-    ax.axis('off')
-    ax.axis('tight')
-    ax.table(cellText=scores_df, colLabels=scores_df.columns, rowLabels=index, loc='center')
-
-    fig.tight_layout()
-    plt.show()
-
-
-def plot_data_by_real_teachers(csv_path, folder_path):
+def plot_average_validation_results(csv_path, folder_path, number_of_songs, validation_number, test_songs):
     one_dim_final = []
     pitch_final = []
     tempo_final = []
@@ -150,7 +130,8 @@ def plot_data_by_real_teachers(csv_path, folder_path):
     overall_final = []
 
     for i in range(3):
-        one_dim_i, pitch_i, tempo_i, rhythm_i, a_d_i, overall_i = train_test_real(csv_path, folder_path, True)
+        one_dim_i, pitch_i, tempo_i, rhythm_i, a_d_i, overall_i = \
+            train_test(csv_path, folder_path, number_of_songs, validation_number, test_songs, to_print=False)
 
         one_dim_final.append(one_dim_i)
         pitch_final.append(pitch_i)
@@ -239,22 +220,21 @@ def plot_data_by_real_teachers(csv_path, folder_path):
     print(" ")
 
 
-def train_test_real(csv_path, folder_path, to_print, del_songs=0):
+def train_test(csv_path, folder_path, number_of_songs, validation_number, test_songs, to_print=True):
     if csv_path == "Fake":
         song_dict = fake_teachers_algorithm(True, 10, folder=folder_path)
     else:
         song_dict = processSurveyResults(csv_path, folder_path)
-    del song_dict["HaKova Sheli"]  # for test in the end
-    del song_dict["Shir Eres"]  # for test in the end
+
+    # optional - change which or number of songs in test, train and validation sets
+    for test_song in test_songs:
+        del song_dict[test_song]  # for test in the end
     song_lst = list(song_dict.keys())
-    for j in range(del_songs):
-        del song_dict[song_lst[-1]]
-        del song_lst[-1]
-    n_splits = 4 - ceil(del_songs / 2)
+    n_splits = 4
     n_repeats = 50
     n_total = 28
     try:
-        n_total = comb(8 - del_songs, 2)
+        n_total = comb(number_of_songs - len(test_songs), validation_number)
     except:
         1
     # kf = KFold(n_splits=10)
@@ -277,9 +257,8 @@ def train_test_real(csv_path, folder_path, to_print, del_songs=0):
     a_d_k = []
     overall_k = []
 
-    label_mapping = {0: ["0", "-1"], 3: ["1", "-1"], 1: ["0", "0"], 2: ["0", "1"], 4: ["1", "0"],
-                     5: ["1", "1"]}
     cnt = 0
+    # using cross validation to test and save different models
     for train, test in rkf.split(song_lst):
         labeled_data_train_one_dimension = []
         labeled_data_test = []
@@ -308,7 +287,6 @@ def train_test_real(csv_path, folder_path, to_print, del_songs=0):
         for i in train:
             song_i = song_dict[song_lst[i]]
             labeled_data_train_one_dimension += song_i.performances
-
 
         train_one_dimension = pd.DataFrame(labeled_data_train_one_dimension,
                                            columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
@@ -440,27 +418,31 @@ def songs_to_csv(song_dict):
         song_pd.to_csv(song.name + '.csv')
 
 
-def final_tests(csv_path, folder_path, del_songs=0):
+def final_tests(csv_path, folder_path, number_of_songs, validation_number, test_songs):
     n_total = 28
     try:
-        n_total = comb(8 - del_songs, 2)
+        n_total = comb(number_of_songs - len(test_songs), validation_number)
     except:
         1
     if csv_path == "Fake":
         song_dict = fake_teachers_algorithm(True, 10, folder=folder_path)
     else:
         song_dict = processSurveyResults(csv_path, folder_path)
-    song_1 = song_dict["HaKova Sheli"]  # for test in the end
-    song_2 = song_dict["Shir Eres"]  # for test in the end
 
-    labeled_data_performances = song_1.performances
-    labeled_data_performances += song_2.performances
+    # prepare test set
+    for i, song_name in enumerate(test_songs):
+        song = song_dict[song_name]
+        if i == 0:
+            labeled_data_performances = song.performances
+        else:
+            labeled_data_performances += song.performances
 
     labeled_data = pd.DataFrame(labeled_data_performances,
                                 columns=['Pitch', 'Tempo', 'Rhythm', 'Articulation', 'Dynamics',
                                          "Teacher's Pitch", "Teacher's Tempo", "Teacher's Rhythm",
                                          "Teacher's Articulation & Dynamics", "Teacher's Overall", 'label'])
 
+    # testing each feature with an ensemble of the models created in train and test
     ### one_dim
     x_one_dim = pd.DataFrame(labeled_data[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
     y_one_dim = labeled_data["label"]
@@ -596,24 +578,24 @@ def predict_from_models(models, x, majority=True):
     return y_hat_final
 
 
-if __name__ == "__main__":
-    # plot_data_by_real_teachers("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
-    scores = []
-
-    for del_songs in range(4, -1, -1):
-        train_test_real("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", to_print=True, del_songs=del_songs)
-        pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score = \
-            final_tests("Music+evaluation_September+7%2C+2021_07.06.csv", "songs", del_songs=del_songs)
-        scores.append([pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score,
-                       one_dim_final_score])
-    print(scores)
-
-
-
+def full_process(csv_path, songs_folder_path, number_of_songs=10, validation_songs=2,
+                 test_songs=["HaKova Sheli", "Shir Eres"]):
     '''
-    generated_data = auxiliary.generate_random_mistakes_data('songs/original songs', 20, True)
-    train_test_real("Fake", "songs/", to_print=True)
+
+    :param csv_path: str, Path of the questionnaire results file
+    :param songs_folder_path: str, Path of the songs directory
+    :param number_of_songs: number of original songs performed
+    :param validation_songs: number of songs to be in validation set
+    :param test_songs: array of songs names for test set
+    :return: array with cross-validation scores for each feature
+    '''
+    plot_average_validation_results(csv_path, songs_folder_path, number_of_songs, validation_songs,
+                                    test_songs)
     pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score = \
-        final_tests("Fake", "songs/")
-    '''
-    # get_correlation_matrix("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
+        final_tests(csv_path, songs_folder_path, number_of_songs, validation_songs, test_songs)
+    return [pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score,
+            one_dim_final_score]
+
+
+if __name__ == "__main__":
+    full_process("Music+evaluation_September+7%2C+2021_07.06.csv", "songs")
