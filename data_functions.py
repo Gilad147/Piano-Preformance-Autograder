@@ -12,7 +12,7 @@ from sklearn.metrics import ConfusionMatrixDisplay
 import Performance_class
 import Song_Class
 import numpy as np
-from sklearn.model_selection import KFold, RepeatedKFold
+from sklearn.model_selection import RepeatedKFold
 from statsmodels.stats.proportion import proportion_confint
 
 from Automated_teacher import fake_teachers_algorithm
@@ -579,7 +579,7 @@ def predict_from_models(models, x, majority=True):
 
 
 def full_process(csv_path, songs_folder_path, number_of_songs=10, validation_songs=2,
-                 test_songs=["HaKova Sheli", "Shir Eres"]):
+                 test_songs=None):
     '''
 
     :param csv_path: str, Path of the questionnaire results file
@@ -589,6 +589,8 @@ def full_process(csv_path, songs_folder_path, number_of_songs=10, validation_son
     :param test_songs: array of songs names for test set
     :return: array with cross-validation scores for each feature
     '''
+    if test_songs is None:
+        test_songs = ["HaKova Sheli", "Shir Eres"]
     plot_average_validation_results(csv_path, songs_folder_path, number_of_songs, validation_songs,
                                     test_songs)
     pitch_final_score, tempo_final_score, rhythm_final_score, a_d_final_score, overall_final_score, one_dim_final_score = \

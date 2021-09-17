@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 class Song:
     def __init__(self, name, level=None):
         self.name = name

@@ -1,22 +1,7 @@
-import math
-
-import pandas as pd
+import Fake_Data
+import pretty_midi
 
 import Performance_class
-import Song_Class
-import numpy as np
-import pretty_midi
-import os
-import shutil
-from pathlib import Path
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score
-import xgboost as xgb
-
-import pickle
 
 
 def change_midi_file_tempo(original_path, new_path, percentage=0.10):
@@ -24,11 +9,11 @@ def change_midi_file_tempo(original_path, new_path, percentage=0.10):
                                                 original_path)
     percentage = -percentage
     if percentage > 0:
-        performance.mistakes_generator("rhythm", noise=percentage)
-        performance.mistakes_generator("duration", noise=percentage, original=False)
+        Fake_Data.mistakes_generator(performance, "rhythm", noise=percentage)
+        Fake_Data.mistakes_generator(performance, "duration", noise=percentage, original=False)
     else:
-        performance.mistakes_generator("duration", noise=percentage)
-        performance.mistakes_generator("rhythm", noise=percentage, original=False)
+        Fake_Data.mistakes_generator(performance, "duration", noise=percentage)
+        Fake_Data.mistakes_generator(performance, "rhythm", noise=percentage, original=False)
     np2mid(performance.midi_df, new_path, None, True)
     return new_path
 

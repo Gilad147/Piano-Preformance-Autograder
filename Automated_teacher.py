@@ -1,9 +1,6 @@
-import pretty_midi
 import Performance_class
 import random
 import os
-import pandas as pd
-import auxiliary
 import Song_Class
 
 
@@ -83,18 +80,6 @@ def create_fake_teachers(number_of_teachers):
         tempo_unique_score = round(random.uniform(-0.1, 0.1), 2)
         articulation_unique_score = round(random.uniform(-0.1, 0.1), 2)
         dynamics_unique_score = round(random.uniform(-0.1, 0.1), 2)
-
-        # pitch_unique_stumps = round(random.uniform(-0.1, 0.1), 2)
-        # rhythm_unique_stumps = round(random.uniform(-0.1, 0.1), 2)
-        # tempo_unique_stumps = round(random.uniform(-0.1, 0.1), 2)
-        # articulation_unique_stumps = round(random.uniform(-0.1, 0.1), 2)
-        # dynamics_unique_stumps = round(random.uniform(-0.1, 0.1), 2)
-        #
-        # pitch_unique_score = round(random.uniform(-0.1, 0.1), 2)
-        # rhythm_unique_score = round(random.uniform(-0.1, 0.1), 2)
-        # tempo_unique_score = round(random.uniform(-0.1, 0.1), 2)
-        # articulation_unique_score = round(random.uniform(-0.1, 0.1), 2)
-        # dynamics_unique_score = round(random.uniform(-0.1, 0.1), 2)
 
         teacher_i = Teacher(pitch_unique_stumps, rhythm_unique_stumps, tempo_unique_stumps,
                             articulation_unique_stumps, dynamics_unique_stumps,
@@ -206,7 +191,7 @@ class Teacher:
         elif feature_name == "Overall":
             feature_score = \
                 feature_score[0] * (0.1 + self.pitch_unique_score) * 0.5 + (
-                            feature_score[1] + self.tempo_unique_score) * 0.05 + \
+                        feature_score[1] + self.tempo_unique_score) * 0.05 + \
                 (feature_score[2] + self.rhythm_unique_score) * 0.25 + \
                 (feature_score[3] + self.articulation_unique_score) * 0.15 + feature_score[4] * 0.05
             return str(round(feature_score * 10))

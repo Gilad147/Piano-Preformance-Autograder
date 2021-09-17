@@ -31,7 +31,7 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
                         auxiliary.np2mid(data.midi_df, path, original_midi_file=None, write_midi_file=True)
                     else:
                         fake_data_performance = auxiliary.np2mid(data.midi_df, song_name, original_midi_data[i],
-                                                       write_midi_file=False)
+                                                                 write_midi_file=False)
                         song_instance.fake_performances.append(fake_data_performance)
             all_data.append(song_instance)
     return all_data
@@ -44,13 +44,13 @@ def create_random_mistakes(path, name, n, max_noise, max_percentage, min_noise=0
         performance = Performance_class.Performance(path, name, name + " random mistakes: " + str(i), path)
         original_midi_data.append(performance.midi_data_original)
         mistakes_generator(performance, "rhythm", np.random.uniform(min_noise, max_noise),
-                                       np.random.uniform(min_percentage, max_percentage))
+                           np.random.uniform(min_percentage, max_percentage))
         mistakes_generator(performance, "duration", np.random.uniform(min_noise, max_noise),
-                                       np.random.uniform(min_percentage, max_percentage), False)
+                           np.random.uniform(min_percentage, max_percentage), False)
         mistakes_generator(performance, "velocity", np.random.uniform(min_noise, max_noise),
-                                       np.random.uniform(min_percentage, max_percentage), False)
-        mistakes_generator(performance, "pitch", np.random.uniform(min_noise/2, max_noise/4),
-                                       np.random.uniform(min_percentage, max_percentage), False)
+                           np.random.uniform(min_percentage, max_percentage), False)
+        mistakes_generator(performance, "pitch", np.random.uniform(min_noise / 2, max_noise / 4),
+                           np.random.uniform(min_percentage, max_percentage), False)
         flawed_performances.append(performance)
 
     return flawed_performances, original_midi_data

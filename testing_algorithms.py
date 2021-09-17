@@ -1,21 +1,10 @@
-import math
-
 import pandas as pd
-
-import Performance_class
-import Song_Class
-import numpy as np
-import pretty_midi
-import os
-import shutil
-from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 import xgboost as xgb
-
 import pickle
 
 
@@ -41,7 +30,7 @@ def trainAndTest(train_one_dim, test, cnt, to_print=False, model_features="All")
 
 
 def test_algorithms_next_step(labeled_data_train, labeled_data_test, with_tempo, cnt, chosen_model_name,
-                                            to_print=True):
+                              to_print=True):
     if with_tempo:
         x_train = pd.DataFrame(labeled_data_train[["Pitch", "Tempo", 'Rhythm', 'Articulation', 'Dynamics']])
         y_train = labeled_data_train['label']

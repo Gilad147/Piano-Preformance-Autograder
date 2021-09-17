@@ -2,7 +2,6 @@ import pretty_midi
 import pandas as pd
 import numpy as np
 from difflib import SequenceMatcher
-
 from data_functions import load_models, predict_from_models
 
 
