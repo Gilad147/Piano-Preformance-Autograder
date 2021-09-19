@@ -9,17 +9,17 @@ This project is designed to make automatic evaluations of piano performances rec
 The evaluation is achieved using a combination of different Machine Learning algorithms.
 Asside from getting a numerical grade for features of the performance, the player get a Next-Step improving recommendation.
 	
-## Technologies
-Project is created with:
-* Lorem version: 12.3
-* Ipsum version: 2.33
-* Ament library version: 999
+## Set Up
+The project contains a directory of 20-30 musical pieces. 
+To manipulate add new musical pieces:
+* Find the /project directory/songs folder
+* decide wether a folder that fits the level of your piece exists or add a new folder
+* when inside the proper folder add 3 files with the name of the piece: .ly .midi .png
 	
-## Setup
-To run this project, install it locally using npm:
+## Running the application
+To run this project, fork it to your local Python Interpeter
 
 ```
-$ cd ../lorem
-$ npm install
-$ npm start
+After importing all the required packages and libraries, 
+Run the GUI.py file which has a main function to start the code run
 ```
