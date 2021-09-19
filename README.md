@@ -1,15 +1,15 @@
 # Piano-Preformance-Autograder
 ## Table of contents
 * [General info](#general-info)
-* [Technologies](#technologies)
 * [Setup](#setup)
+* [Running](#running)
 
 ## General info
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
 The evaluation is achieved using a combination of different Machine Learning algorithms.
 Asside from getting a numerical grade for features of the performance, the player get a Next-Step improving recommendation.
 	
-## Set Up
+## Setup
 The project contains a directory of 20-30 musical pieces. 
 To manipulate add new musical pieces:
 * Find the /project directory/songs folder
