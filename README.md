@@ -2,7 +2,7 @@
 ## Table of contents
 * [General info](#general-info)
 * [Setup](#setup)
-* [Running](#running the application)
+* [Running](#running)
 
 ## General info
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
@@ -16,7 +16,7 @@ To manipulate add new musical pieces:
 * decide wether a folder that fits the level of your piece exists or add a new folder
 * when inside the proper folder add 3 files with the name of the piece: .ly .midi .png
 	
-## Running the application
+## Running
 To run this project, fork it to your local Python Interpeter
 
 ```
