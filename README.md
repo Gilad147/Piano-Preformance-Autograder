@@ -17,7 +17,7 @@ To manipulate add new musical pieces:
 * when inside the proper folder add 3 files with the name of the piece: .ly .midi .png
 	
 ## Running
-To run this project, fork it to your local Python Interpeter
+To run the application, fork it to your local Python Interpeter
 
 ```
 After importing all the required packages and libraries, 
