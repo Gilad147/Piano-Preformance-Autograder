@@ -12,9 +12,10 @@ Asside from getting a numerical grade for features of the performance, the playe
 ## Setup
 The project contains a directory of 20-30 musical pieces. 
 To manipulate add new musical pieces:
-* Find the /project directory/songs folder
+* Find the /project directory/songs/ folder
 * decide wether a folder that fits the level of your piece exists or add a new folder
 * when inside the proper folder add 3 files with the name of the piece: .ly .midi .png
+* Data recorded through the use of the app is saved to /students recordings/ folder
 	
 ## Running
 To run the application, fork it to your local Python Interpeter
