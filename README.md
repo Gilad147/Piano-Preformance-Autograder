@@ -2,7 +2,7 @@
 ## Table of contents
 * [General info](#general-info)
 * [Setup](#setup)
-* [Running](#running)
+* [Running](#running the application)
 
 ## General info
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
