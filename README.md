@@ -5,7 +5,9 @@
 * [Setup](#setup)
 
 ## General info
-This project is simple Lorem ipsum dolor generator.
+This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
+The evaluation is achived using a combination of different Macine Learning algorithms.
+Asside from getting a numerical grade for features of the performance, the player get a Next-Step improving recommendation.
 	
 ## Technologies
 Project is created with:
