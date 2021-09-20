@@ -7,7 +7,7 @@ from pathlib import Path
 import auxiliary
 
 
-def generate_random_mistakes_data(folder, n, create_midi_files):
+def generate_random_mistakes_data(folder, n, create_midi_files, max_noise, max_percentage, min_noise=0, min_percentage=0.5):
     basepath = folder + '/'
     all_data = []
     if create_midi_files:
@@ -19,8 +19,8 @@ def generate_random_mistakes_data(folder, n, create_midi_files):
             if song.is_file() and song.name != '.DS_Store':
                 song_instance = Song_Class.Song(song_name)
                 flawed_performances, original_midi_data = create_random_mistakes(basepath + song.name, song_name, n,
-                                                                                 min_noise=0.2, max_noise=0.9,
-                                                                                 min_percentage=0.4, max_percentage=1)
+                                                                                 min_noise=min_noise, max_noise=max_noise,
+                                                                                 min_percentage=min_percentage, max_percentage=max_percentage)
                 if create_midi_files:
                     Path(fake_data_path + song_name).mkdir(exist_ok=True)
                     shutil.copy(basepath + song.name, fake_data_path + song_name)
