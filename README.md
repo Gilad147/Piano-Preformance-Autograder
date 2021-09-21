@@ -52,7 +52,7 @@ Use the function **"generate_random_mistakes_data"** in the **"Fake_Data.py"** f
 **return value of the function** - the functions returns a list of instances of the class "Song_Class". Each instance represents a song, and all its fake performances are in the field 'fake_performances'.
 
 ### Fake teachers
-We created a fake teachers algorithm that grade performances and give a next step reccomendation. 
+We created a fake teachers algorithm that can grade performances and give a next step reccomendation. 
 
 <details>
 <summary><b>Create fake teachers</b></summary>
