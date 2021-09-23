@@ -82,10 +82,10 @@ Use the function **"generate_random_mistakes_data"** in the **"Fake_Data.py"** f
 * ```folder``` - the path of the folder that contains the songs you would like to generate fake data based on. 
 * ``` n ``` - number of fake performances generated out of **every song in the directory**. (For example - if n=3 and the directory contains 4 songs - 12 fake performances will be generated).
 * ```create_midi_files``` - 'true' if you want to create a MIDI file for each fake performance you generate. 'false' otherwise (in this case you will have to use the return value of this function if you would like to use the fake generated data outside of this function).
-* ```max_noise``` - a number between 0 to 1. Higher number will raise the magnitude ceiling for each change of the original song
-* ```max_percentage``` - a number between 0 to 1.  Higher number will raise the ceiling of the percentage of the song notes to be cahnged 
-* ```min_noise``` - a number between 0 to 1.  Higher number will raise the magnitude floor for each change of the original song
-* ```min_percentage``` - a number between 0 to 1.  Higher number will raise the floor of the percentage of the song notes to be cahnged 
+* ```max_noise``` - a number between 0 to 1. Higher number will raise the magnitude ceiling for each change of the original song.
+* ```max_percentage``` - a number between 0 to 1.  Higher number will raise the ceiling of the percentage of the song notes to be cahnged.
+* ```min_noise``` - a number between 0 to 1.  Higher number will raise the magnitude floor for each change of the original song.
+* ```min_percentage``` - a number between 0 to 1.  Higher number will raise the floor of the percentage of the song notes to be cahnged. 
 
 **return value of the function** - the functions returns a list of instances of the class "Song_Class". Each instance represents a song, and all its fake performances are in the field 'fake_performances'.
 
