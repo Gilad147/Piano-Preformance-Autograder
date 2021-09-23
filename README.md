@@ -69,7 +69,7 @@ Use the function **create_fake_teachers** in the **"Automated_teacher.py** file,
 <summary><b>Grade performances using the fake teacherss</b></summary>
 
 	
-Use the function **fake_teachers_feedback** in the **"Automated_teacher.py** file, with the following parameters:
+Use the function **fake_teachers_feedback** in the **"Automated_teacher.py"** file, with the following parameters:
 * ```performance``` - the performance that you want to be graded by the fake teachers, as "Performance" class instance.
 * ```teachers``` - a list containing "Teacher" class' instances for each fake teacher (thenoutput of the function "create_fake_teahcers", and can be found in the field ).
 * ```pitch_tech_score``` - the pitch technical score of the performance (computed using the function "get_features" of the class "Performance").
