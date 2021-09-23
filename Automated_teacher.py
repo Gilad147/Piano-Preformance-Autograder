@@ -1,5 +1,7 @@
 import random
-
+import Song_Class
+import Performance_class
+import os
 
 def create_fake_teachers(number_of_teachers):
     teachers = []
@@ -141,3 +143,65 @@ class Teacher:
             return "3"
         else:
             return "4"
+
+
+def fake_teachers_algorithm(from_midi_files_or_not, number_of_teachers, folder=None,
+                            performances_data=None):
+    teachers = create_fake_teachers(number_of_teachers)
+    song_dict = {}
+    if from_midi_files_or_not:
+        if folder is not None:
+            basepath = folder + 'original songs - fake data/'
+        else:
+            basepath = 'original songs - fake data/'
+        with os.scandir(basepath) as songs:
+            for song in songs:
+                if song.is_dir():
+                    song_path = song.name + '/fake performances/'
+                    song_class = Song_Class.Song(song.name)
+                    with os.scandir(basepath + song_path) as performances:
+                        for performance in performances:
+                            if performance.name != '.DS_Store':
+                                performance_class = Performance_class.Performance(
+                                    path=basepath + song_path + performance.name,
+                                    name=song.name,
+                                    player_name=performance.name,
+                                    original_path=folder + 'original songs/' + song.name + ".midi")
+                                pitch_tech_score, tempo_tech_score, rhythm_tech_score, articulation_tech_score, \
+                                dynamics_tech_score = performance_class.get_features()
+
+                                if pitch_tech_score > 0:
+                                    fake_teachers_feedback(performance_class, teachers, pitch_tech_score,
+                                                           tempo_tech_score,
+                                                           rhythm_tech_score, articulation_tech_score,
+                                                           dynamics_tech_score)
+
+                                    performance_class.give_labels()
+                                    labels = performance_class.labels
+
+                                    performance_attributes = [pitch_tech_score, tempo_tech_score, rhythm_tech_score,
+                                                              articulation_tech_score, dynamics_tech_score,
+                                                              labels[0], labels[1], labels[2], labels[3], labels[4],
+                                                              labels[5]]
+
+                                    song_class.performances.append(performance_attributes)
+                    song_dict[song.name] = song_class
+    else:
+        for song in performances_data:
+            for performance in song.fake_performances:
+
+                pitch_tech_score, tempo_tech_score, rhythm_tech_score, articulation_tech_score, dynamics_tech_score = performance.get_features()
+                if rhythm_tech_score != -1:
+                    fake_teachers_feedback(performance, teachers, pitch_tech_score, tempo_tech_score, rhythm_tech_score,
+                                           articulation_tech_score, dynamics_tech_score)
+                    performance.give_labels()
+                    labels = performance.labels
+                    performance_attributes = [pitch_tech_score, tempo_tech_score, rhythm_tech_score,
+                                              articulation_tech_score, dynamics_tech_score,
+                                              labels[0], labels[1], labels[2], labels[3], labels[4],
+                                              labels[5]]
+
+                    song.performances.append(performance_attributes)
+                song_dict[song.name] = song
+
+    return song_dict
