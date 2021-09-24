@@ -3,6 +3,7 @@ import Song_Class
 import Performance_class
 import os
 
+
 def create_fake_teachers(number_of_teachers):
     teachers = []
     for i in range(number_of_teachers):
