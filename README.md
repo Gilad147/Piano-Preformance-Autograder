@@ -26,11 +26,12 @@ To add new musical pieces:
 To run the application, clone the project and open it using your local Python IDE.
 * Install all required packages: 
    * Open Terminal/Command Line and go to the same directory where you saved the project's files (Alternatively - use the Terminal in your Python IDE, if this feature exists in your IDE).
+   * Follow the instruction in this [link](https://cs.gmu.edu/~marks/112/projects/PlaySong.pdf) to install the package "pyaudio" (follow only the "pyaudio" installing explanation, you don't need to download anything else (although you might need to download "Homebrew" using this [link](https://brew.sh) if you are using MacOS)).
    * Run the command:
    ```
    pip3 install -r requirements.txt
    ```
-* Run the file "GUI.py".
+* Run the file "GUI.py" (takes a few seconds on the first run).
 
 ## Run experiments with the data
 <details>
