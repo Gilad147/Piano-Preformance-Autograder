@@ -1,8 +1,8 @@
 # Piano-Preformance-Autograder
 ## Table of contents
 * [General info](#general-info)
-* [GUI Setup](#gui-setup)
 * [Run the GUI](#run-the-gui)
+* [GUI adjustments](#gui-adjustments)
 * [Run experiments with the data](#run-experiments-with-the-data)
 * [Fake data & Fake teachers](#fake-data-and-fake-teachers)
 
@@ -10,17 +10,6 @@
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
 The evaluation is given by using different Machine Learning algorithms.
 Asside from getting a numerical grade for features of the performance, the player also get a Next-Step improving recommendation.
-	
-## GUI Setup
-The project contains a directory with 43 different musical pieces, grouped as Song Books. 
-To add new musical pieces:
-* Go to ".../project directory/songs/"
-* Choos a Song Book to add the song to. Create a new folder if you want to add a new Song Book.
-* Add the following files for each song:
-   *  <song_name>.ly
-   *  <song_name>.midi
-   *  <song_name>.png
-* Data recorded while using the app will be saved in the directory ".../students recordings".
 	
 ## Run the GUI
 To run the application, clone the project and open it using your local Python IDE.
@@ -33,6 +22,25 @@ To run the application, clone the project and open it using your local Python ID
    ```
 * Run the file "GUI.py" (takes a few seconds on the first run).
 
+## GUI adjustments 
+
+<details>
+<summary><b>Adding new songs or Song Books</b></summary>
+
+The project contains a directory with 43 different musical pieces, grouped as Song Books. 
+To add new musical pieces:
+* Go to ".../project directory/songs/"
+* Choos a Song Book to add the song to. Create a new folder if you want to add a new Song Book.
+* Add the following files for each song:
+   *  <song_name>.ly
+   *  <song_name>.midi
+   *  <song_name>.png
+
+Data recorded while using the app will be saved in the directory ".../students recordings".
+
+</details>
+	
+	
 ## Run experiments with the data
 <details>
 <summary><b>Initializing a "Performance" class instance</b></summary>
