@@ -1,8 +1,8 @@
 # Piano-Preformance-Autograder
 ## Table of contents
 * [General info](#general-info)
-* [Run the GUI](#run-the-gui)
-* [GUI adjustments](#gui-adjustments)
+* [Installations](#installations)
+* [GUI](#gui)
 * [Run experiments with the data](#run-experiments-with-the-data)
 * [Fake data & Fake teachers](#fake-data-and-fake-teachers)
 
@@ -10,12 +10,10 @@
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
 The evaluation is given by using different Machine Learning algorithms.
 Asside from getting a numerical grade for features of the performance, the players also get a recommendation for what should be their next step in their training.
-	
-## Run the GUI
-<details>
-<summary><b>GUI Installation </b></summary>
 
-To run the GUI, clone the project and open it using your local Python IDE.
+## Installations
+Follow the next instructions:
+* Clone the project and open it using your local Python IDE.
 * Install all required packages: 
    * Open Terminal/Command Line and go to the same directory where you saved the project's files (Alternatively - use the Terminal in your Python IDE, if this feature exists in your IDE).
    * Follow the instruction in this [link](https://cs.gmu.edu/~marks/112/projects/PlaySong.pdf) to install the package "pyaudio" (follow only the "pyaudio" installing explanation, you don't need to download anything else (although you might need to download "Homebrew" using this [link](https://brew.sh) if you are using MacOS)).
@@ -23,15 +21,13 @@ To run the GUI, clone the project and open it using your local Python IDE.
    ```
    pip3 install -r requirements.txt
    ```
-* Run the file "GUI.py" (takes a few seconds on the first run).
 
-</details>
-
+## GUI
 <details>
 <summary><b>Using the GUI</b></summary>
 
-	
-After the GUI has been launched, follow these intructions:
+After finishing the [installation process](#installations), in order to use the GUI follow these instructions:
+* Run the file "GUI.py" (takes a few seconds on the first run).
 * Enter a user's ID (must be 9 digits).
 * Choose a Song Book (the first dropdown menu), and click on the "ok" button.
 * Choose a song (the second dropdown menu), and click on the "confirm" button (a MIDI device must be connected at this point).
@@ -45,11 +41,8 @@ After the GUI has been launched, follow these intructions:
 
 </details>
 
-## GUI adjustments 
-
 <details>
 <summary><b>Adding new songs or Song Books</b></summary>
-
 	
 The project contains a directory with 43 different musical pieces, grouped as Song Books. 
 To add new musical pieces:
