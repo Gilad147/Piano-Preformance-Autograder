@@ -9,10 +9,13 @@
 ## General info
 This project is designed to make automatic evaluations of piano performances recorded with a MIDI keyboard.
 The evaluation is given by using different Machine Learning algorithms.
-Asside from getting a numerical grade for features of the performance, the player also get a Next-Step improving recommendation.
+Asside from getting a numerical grade for features of the performance, the players also get a recommendation for what should be their next step in their training.
 	
 ## Run the GUI
-To run the application, clone the project and open it using your local Python IDE.
+<details>
+<summary><b>GUI Installation </b></summary>
+
+To run the GUI, clone the project and open it using your local Python IDE.
 * Install all required packages: 
    * Open Terminal/Command Line and go to the same directory where you saved the project's files (Alternatively - use the Terminal in your Python IDE, if this feature exists in your IDE).
    * Follow the instruction in this [link](https://cs.gmu.edu/~marks/112/projects/PlaySong.pdf) to install the package "pyaudio" (follow only the "pyaudio" installing explanation, you don't need to download anything else (although you might need to download "Homebrew" using this [link](https://brew.sh) if you are using MacOS)).
@@ -22,11 +25,32 @@ To run the application, clone the project and open it using your local Python ID
    ```
 * Run the file "GUI.py" (takes a few seconds on the first run).
 
+</details>
+
+<details>
+<summary><b>Using the GUI</b></summary>
+
+	
+After the GUI has been launched, follow these intructions:
+* Enter a user's ID (must be 9 digits).
+* Choose a Song Book (the first dropdown menu), and click on the "ok" button.
+* Choose a song (the second dropdown menu), and click on the "confirm" button (a MIDI device must be connected at this point).
+* The music sheet of the selected song will be presented, along with 3 buttons:
+  * **"Record" button** - starts the recording session.
+  * **"Try Again" button** - resets the recorded data and allows the user to start over the recording session. 
+  * **"stop" button** - ends the recording session. After clicking on this button, the users will get their feedback (grades & next step recommendation). Then, the users will have three options:
+    * Accept our recommendation for the next learning step (try and play the song we recommended with the tempo we recommended).
+    * Try and play the same piece again to get another feedback.
+    * End the current training session.
+
+</details>
+
 ## GUI adjustments 
 
 <details>
 <summary><b>Adding new songs or Song Books</b></summary>
 
+	
 The project contains a directory with 43 different musical pieces, grouped as Song Books. 
 To add new musical pieces:
 * Go to ".../project directory/songs/"
@@ -83,6 +107,10 @@ After initializing, a Performance class' instance will have few more fields:
 
 ### Fake data
 You can generate fake users' performances data based on existing songs. This algorithm inserts random noise to each MIDI feature.
+
+<details>
+<summary><b>Generating fake performances' data</b></summary>
+	
 Use the function **"generate_random_mistakes_data"** in the **"Fake_Data".py"** file, with the following parameters:
 * ```folder``` - the path of the folder that contains the songs you would like to generate fake data based on. 
 * ``` n ``` - number of fake performances generated out of **every song in the directory**. (For example - if n=3 and the directory contains 4 songs - 12 fake performances will be generated).
@@ -93,6 +121,8 @@ Use the function **"generate_random_mistakes_data"** in the **"Fake_Data".py"** 
 * ```min_percentage``` - a number between 0 to 1.  Higher number will raise the floor of the percentage of the song notes to be cahnged. 
 
 **return value of the function** - the functions returns a list of instances of the class "Song_Class". Each instance represents a song, and all its fake performances are in the field 'fake_performances'.
+
+</details>
 
 ### Fake teachers
 We created a fake teachers algorithm that can grade performances and give a next step reccomendation. 
